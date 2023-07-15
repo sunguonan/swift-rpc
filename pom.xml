@@ -10,6 +10,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>rpc-demo</module>
+        <module>rpc-framework</module>
     </modules>
 
     <properties>
@@ -19,11 +20,10 @@
         <netty.version>4.1.89.Final</netty.version>
         <junit.version>4.13.2</junit.version>
         <zookeeper.version>3.8.1</zookeeper.version>
+        <logback.version>1.4.5</logback.version>
+        <lombok.version>1.18.24</lombok.version>
+        <commons.version>3.12.0</commons.version>
     </properties>
-
-    <dependencies>
-
-    </dependencies>
 
     <dependencyManagement>
         <dependencies>
@@ -42,6 +42,21 @@
                 <groupId>org.apache.zookeeper</groupId>
                 <artifactId>zookeeper</artifactId>
                 <version>${zookeeper.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
