@@ -1,4 +1,7 @@
-package com.swift;
+package com.swift.impl;
+
+import com.swift.HelloRpc;
+
 
 /**
  * @author sunGuoNan

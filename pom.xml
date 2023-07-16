@@ -11,6 +11,7 @@
     <modules>
         <module>rpc-demo</module>
         <module>rpc-framework</module>
+        <module>rpc-manager</module>
     </modules>
 
     <properties>
@@ -20,9 +21,10 @@
         <netty.version>4.1.89.Final</netty.version>
         <junit.version>4.13.2</junit.version>
         <zookeeper.version>3.8.1</zookeeper.version>
-        <logback.version>1.4.5</logback.version>
+        <logback.version>1.2.12</logback.version>
         <lombok.version>1.18.24</lombok.version>
         <commons.version>3.12.0</commons.version>
+        <slf4j.version>1.7.30</slf4j.version>
     </properties>
 
     <dependencyManagement>
@@ -45,7 +47,7 @@
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-core</artifactId>
+                <artifactId>logback-classic</artifactId>
                 <version>${logback.version}</version>
             </dependency>
             <dependency>
