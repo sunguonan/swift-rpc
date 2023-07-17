@@ -1,5 +1,6 @@
 package com.swift;
 
+import com.swift.util.NetUtils;
 import com.swift.util.zookeeper.ZookeeperNode;
 import com.swift.util.zookeeper.ZookeeperUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class RpcBootStrap {
     private ProtocolConfig protocolConfig;
 
     private ZooKeeper zooKeeper;
+    private int port = 8080;
 
     private RpcBootStrap() {
         // 私有化构造器  做一些初始化的事情
@@ -88,12 +90,22 @@ public class RpcBootStrap {
      */
     public RpcBootStrap publish(ServerConfig<?> server) {
 
-        // 获取服务名称的结点
+        // 创建服务节点
         String parentNode = Constant.BASE_PROVIDER_PATH + "/" + server.getInterface().getName();
-        ZookeeperNode zookeeperNode = new ZookeeperNode(parentNode, null);
+        ZookeeperNode zookeeperParentNode = new ZookeeperNode(parentNode, null);
         // 发布结点  这个结点是一个持久的结点
         if (!ZookeeperUtil.exists(zooKeeper, parentNode, null)) {
-            ZookeeperUtil.createNode(zooKeeper, zookeeperNode, null, CreateMode.PERSISTENT);
+            ZookeeperUtil.createNode(zooKeeper, zookeeperParentNode, null, CreateMode.PERSISTENT);
+        }
+
+        // 创建本机结点  以ip:port的形式  该结点是临时结点
+        // 服务提供的端口一般由自己设置
+        // ip一般是局域网地址  不是127.0.0.1
+        String localNode = parentNode + "/" + NetUtils.getIp() + ":" + port;
+        ZookeeperNode zookeeperLocalNode = new ZookeeperNode(localNode, null);
+        // 发布结点  这个节点是一个临时节点
+        if (!ZookeeperUtil.exists(zooKeeper, localNode, null)) {
+            ZookeeperUtil.createNode(zooKeeper, zookeeperLocalNode, null, CreateMode.EPHEMERAL);
         }
         return this;
     }
@@ -112,7 +124,11 @@ public class RpcBootStrap {
      * 启动netty服务
      */
     public void start() {
-
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
