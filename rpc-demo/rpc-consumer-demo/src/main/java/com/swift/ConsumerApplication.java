@@ -1,5 +1,7 @@
 package com.swift;
 
+import com.swift.discovery.RegisterConfig;
+
 /**
  * @author sunGuoNan
  * @version 1.0

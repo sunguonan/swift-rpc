@@ -1,11 +1,8 @@
 package com.swift;
 
-import com.swift.util.NetUtils;
-import com.swift.util.zookeeper.ZookeeperNode;
-import com.swift.util.zookeeper.ZookeeperUtil;
+import com.swift.discovery.RegisterConfig;
+import com.swift.discovery.Registry;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.ZooKeeper;
 
 import java.util.List;
 
@@ -22,14 +19,10 @@ public class RpcBootStrap {
      * 单例 --> 懒汉式  私有化构造器  别人不能new
      */
     private static final RpcBootStrap rpcBootStrap = new RpcBootStrap();
-
     private String appName = "default";
     private RegisterConfig registerConfig;
-
     private ProtocolConfig protocolConfig;
-
-    private ZooKeeper zooKeeper;
-    private int port = 8080;
+    private Registry registry;
 
     private RpcBootStrap() {
         // 私有化构造器  做一些初始化的事情
@@ -62,10 +55,8 @@ public class RpcBootStrap {
      * @return this 对象实例
      */
     public RpcBootStrap registry(RegisterConfig registerConfig) {
-        // 这里维护了一个zookeeper的实例 但是会与当前工程耦合到一起
-        // 后面会进行修改 修改成可以兼容不同的服务
-        zooKeeper = ZookeeperUtil.createZookeeper();
-        this.registerConfig = registerConfig;
+        // 使用registerConfig获取一个配置中心  --- 简单工厂设计模式
+        this.registry = registerConfig.getRegister();
         return this;
     }
 
@@ -88,25 +79,9 @@ public class RpcBootStrap {
      * @param server 封装需要发布的服务
      * @return this 对象实例
      */
-    public RpcBootStrap publish(ServerConfig<?> server) {
-
-        // 创建服务节点
-        String parentNode = Constant.BASE_PROVIDER_PATH + "/" + server.getInterface().getName();
-        ZookeeperNode zookeeperParentNode = new ZookeeperNode(parentNode, null);
-        // 发布结点  这个结点是一个持久的结点
-        if (!ZookeeperUtil.exists(zooKeeper, parentNode, null)) {
-            ZookeeperUtil.createNode(zooKeeper, zookeeperParentNode, null, CreateMode.PERSISTENT);
-        }
-
-        // 创建本机结点  以ip:port的形式  该结点是临时结点
-        // 服务提供的端口一般由自己设置
-        // ip一般是局域网地址  不是127.0.0.1
-        String localNode = parentNode + "/" + NetUtils.getIp() + ":" + port;
-        ZookeeperNode zookeeperLocalNode = new ZookeeperNode(localNode, null);
-        // 发布结点  这个节点是一个临时节点
-        if (!ZookeeperUtil.exists(zooKeeper, localNode, null)) {
-            ZookeeperUtil.createNode(zooKeeper, zookeeperLocalNode, null, CreateMode.EPHEMERAL);
-        }
+    public RpcBootStrap publish(ServiceConfig<?> server) {
+        // 抽象出注册中心的概念 使用注册中心的实现完成注册
+        registry.register(server);
         return this;
     }
 
@@ -116,7 +91,10 @@ public class RpcBootStrap {
      * @param server 封装需要发布的服务
      * @return this 对象实例
      */
-    public RpcBootStrap publish(List<ServerConfig<?>> server) {
+    public RpcBootStrap publish(List<ServiceConfig<?>> server) {
+        for (ServiceConfig<?> serviceConfig : server) {
+            this.publish(serviceConfig);
+        }
         return this;
     }
 

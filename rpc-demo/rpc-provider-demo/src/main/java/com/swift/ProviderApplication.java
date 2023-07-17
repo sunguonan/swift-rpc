@@ -1,6 +1,7 @@
 package com.swift;
 
 
+import com.swift.discovery.RegisterConfig;
 import com.swift.impl.HelloRpcImpl;
 
 /**
@@ -12,7 +13,7 @@ public class ProviderApplication {
     public static void main(String[] args) {
         // 服务提供方 --> 需要注册服务 启动服务
         // 1. 封装需要发布的服务  把接口和具体实现封装进去
-        ServerConfig<HelloRpc> server = new ServerConfig<>();
+        ServiceConfig<HelloRpc> server = new ServiceConfig<>();
         // 设置需要提供服务的接口
         server.setInterface(HelloRpc.class);
         // 设置具体被调接口的具体实现
