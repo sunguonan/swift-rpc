@@ -14,4 +14,14 @@ public class Constant {
      * zookeeper默认连接超时时间
      */
     public static final int DEFAULT_ZK_Session_Timeout = 10000;
+
+    /**
+     * 提供者基础路径
+     */
+    public static final String BASE_PROVIDER_PATH = "/rpc-metadata/providers";
+
+    /**
+     * 消费者基础路径
+     */
+    public static final String BASE_CONSUMER_PATH = "/rpc-metadata/consumers";
 }

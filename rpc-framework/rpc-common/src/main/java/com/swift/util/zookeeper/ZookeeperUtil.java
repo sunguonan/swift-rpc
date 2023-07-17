@@ -80,12 +80,34 @@ public class ZookeeperUtil {
             throw new ZookeeperException(e);
         }
     }
-    
+
+    /**
+     * 关闭zookeeper
+     *
+     * @param zooKeeper 实例
+     */
     public static void close(ZooKeeper zooKeeper) {
         try {
             zooKeeper.close();
         } catch (InterruptedException e) {
             log.error("关闭zookeeper连接有问题", e);
+            throw new ZookeeperException(e);
+        }
+    }
+
+    /**
+     * 判断zookeeper中结点是否存在
+     *
+     * @param zooKeeper zookeeper实例
+     * @param nodePath  结点路径
+     * @param watcher   监听器
+     * @return 数据结点不存在就返回 false  | 存在就返回 true
+     */
+    public static Boolean exists(ZooKeeper zooKeeper, String nodePath, Watcher watcher) {
+        try {
+            return zooKeeper.exists(nodePath, watcher) != null;
+        } catch (KeeperException | InterruptedException e) {
+            log.error("判断结点是否存在{}发生异常", nodePath, e);
             throw new ZookeeperException(e);
         }
     }

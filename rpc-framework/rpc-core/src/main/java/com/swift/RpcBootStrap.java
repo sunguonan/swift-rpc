@@ -1,6 +1,10 @@
 package com.swift;
 
+import com.swift.util.zookeeper.ZookeeperNode;
+import com.swift.util.zookeeper.ZookeeperUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.ZooKeeper;
 
 import java.util.List;
 
@@ -17,6 +21,13 @@ public class RpcBootStrap {
      * 单例 --> 懒汉式  私有化构造器  别人不能new
      */
     private static final RpcBootStrap rpcBootStrap = new RpcBootStrap();
+
+    private String appName = "default";
+    private RegisterConfig registerConfig;
+
+    private ProtocolConfig protocolConfig;
+
+    private ZooKeeper zooKeeper;
 
     private RpcBootStrap() {
         // 私有化构造器  做一些初始化的事情
@@ -38,26 +49,32 @@ public class RpcBootStrap {
      * @return this 对象实例
      */
     public RpcBootStrap application(String appName) {
+        this.appName = appName;
         return this;
     }
 
     /**
      * 配置注册中心
      *
-     * @param RegisterConfig 注册中心
+     * @param registerConfig 注册中心
      * @return this 对象实例
      */
-    public RpcBootStrap registry(RegisterConfig RegisterConfig) {
+    public RpcBootStrap registry(RegisterConfig registerConfig) {
+        // 这里维护了一个zookeeper的实例 但是会与当前工程耦合到一起
+        // 后面会进行修改 修改成可以兼容不同的服务
+        zooKeeper = ZookeeperUtil.createZookeeper();
+        this.registerConfig = registerConfig;
         return this;
     }
 
     /**
      * 配置序列化协议
      *
-     * @param protocol 序列化协议  eg 默认jdk
+     * @param protocolConfig 序列化协议  eg 默认jdk
      * @return this 对象实例
      */
-    public RpcBootStrap protocol(ProtocolConfig protocol) {
+    public RpcBootStrap protocol(ProtocolConfig protocolConfig) {
+        this.protocolConfig = protocolConfig;
         return this;
     }
 
@@ -70,6 +87,14 @@ public class RpcBootStrap {
      * @return this 对象实例
      */
     public RpcBootStrap publish(ServerConfig<?> server) {
+
+        // 获取服务名称的结点
+        String parentNode = Constant.BASE_PROVIDER_PATH + "/" + server.getInterface().getName();
+        ZookeeperNode zookeeperNode = new ZookeeperNode(parentNode, null);
+        // 发布结点  这个结点是一个持久的结点
+        if (!ZookeeperUtil.exists(zooKeeper, parentNode, null)) {
+            ZookeeperUtil.createNode(zooKeeper, zookeeperNode, null, CreateMode.PERSISTENT);
+        }
         return this;
     }
 
