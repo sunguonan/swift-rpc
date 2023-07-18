@@ -1,10 +1,15 @@
 package com.swift.discovery;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.CharsetUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 提供bootstrap单例
@@ -12,6 +17,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  * @author sunGuoNan
  * @version 1.0
  */
+@Slf4j
 public class NettyBootstrapInitializer {
     private static Bootstrap bootstrap = new Bootstrap();
 
@@ -26,7 +32,12 @@ public class NettyBootstrapInitializer {
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel socketChannel) throws Exception {
-                        socketChannel.pipeline().addLast(null);
+                        socketChannel.pipeline().addLast(new SimpleChannelInboundHandler<ByteBuf>() {
+                            @Override
+                            protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf) throws Exception {
+                                log.debug("客户端接收到的消息 -- {}", byteBuf.toString(CharsetUtil.UTF_8));
+                            }
+                        });
                     }
                 });
     }

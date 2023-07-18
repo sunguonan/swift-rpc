@@ -3,6 +3,7 @@ package com.swift;
 import com.swift.discovery.NettyBootstrapInitializer;
 import com.swift.discovery.Registry;
 import com.swift.exception.NetworkException;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -114,7 +116,7 @@ public class ReferenceConfig<T> {
 
                 // TODO 需要将 objectFuture 暴露出去
                 CompletableFuture<Object> objectFuture = new CompletableFuture<>();
-                channel.writeAndFlush(new Object())
+                channel.writeAndFlush(Unpooled.copiedBuffer("hi".getBytes(StandardCharsets.UTF_8)))
                         .addListener((ChannelFutureListener) promise -> {
                             // 异步任务不能完成的情况
                             if (!promise.isSuccess()) {
@@ -125,7 +127,8 @@ public class ReferenceConfig<T> {
                         });
 
                 // 返回结果是 服务提供者返回的最后结果
-                return objectFuture.get(3, TimeUnit.SECONDS);
+                // Object o = objectFuture.get(3, TimeUnit.SECONDS);
+                return null;
             }
         });
         return (T) proxy;
