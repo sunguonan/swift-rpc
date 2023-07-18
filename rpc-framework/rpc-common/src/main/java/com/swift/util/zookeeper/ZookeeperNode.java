@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
+ * 创建zookeeper结点的路径和数据
+ *
  * @author sunGuoNan
  * @version 1.0
  */

@@ -2,8 +2,16 @@ package com.swift;
 
 import com.swift.discovery.RegisterConfig;
 import com.swift.discovery.Registry;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,9 +32,12 @@ public class RpcBootStrap {
     private String appName = "default";
     private RegisterConfig registerConfig;
     private ProtocolConfig protocolConfig;
-    private Registry registry;
+    public static final Map<InetSocketAddress, Channel> CHANNEL_CACHE = new ConcurrentHashMap<>(16);
     // 维护暴露的服务列表  key --> interface的全限定名称 value ServiceConfig
-    private static final Map<String, ServiceConfig<?>> SERVICE_LIST = new ConcurrentHashMap<>(16);
+    private static final Map<String, ServiceConfig<?>> SERVICE_LIST =
+            new ConcurrentHashMap<>(16);
+    // 注册中心
+    private Registry registry;
 
     private RpcBootStrap() {
         // 私有化构造器  做一些初始化的事情
@@ -55,7 +66,7 @@ public class RpcBootStrap {
     /**
      * 配置注册中心
      *
-     * @param registerConfig 注册中心
+     * @param registerConfig 注册中心配置实体
      * @return this 对象实例
      */
     public RpcBootStrap registry(RegisterConfig registerConfig) {
@@ -85,10 +96,11 @@ public class RpcBootStrap {
      */
     public RpcBootStrap publish(ServiceConfig<?> server) {
         // 抽象出注册中心的概念 使用注册中心的实现完成注册
+        // zooKeeper = ZookeeperUtil.createZookeeper(); 强耦合
         registry.register(server);
 
-        // 当服务调用方 通过方法名和参数进行方法调用 怎么提供哪一个实现
-        // 1. new一个 2. spring bean工厂  3. 自己维护映射关系
+        // 当服务调用方 通过方法名和参数进行方法调用 怎么提供哪一个实现?
+        // 1. new一个 2. spring bean工厂  3. 自己维护映射关系  那我们选择自己维护映射关系
         SERVICE_LIST.put(server.getInterface().getName(), server);
 
         return this;
@@ -101,9 +113,7 @@ public class RpcBootStrap {
      * @return this 对象实例
      */
     public RpcBootStrap publish(List<ServiceConfig<?>> server) {
-        for (ServiceConfig<?> serviceConfig : server) {
-            this.publish(serviceConfig);
-        }
+        server.forEach(this::publish);
         return this;
     }
 
@@ -111,10 +121,32 @@ public class RpcBootStrap {
      * 启动netty服务
      */
     public void start() {
+        // 创建 boss 和 work
+        NioEventLoopGroup boss = new NioEventLoopGroup(2);
+        NioEventLoopGroup work = new NioEventLoopGroup(10);
         try {
-            Thread.sleep(1000000000);
+            // 需要一个服务器引导程序
+            ServerBootstrap serverBootstrap = new ServerBootstrap();
+            serverBootstrap = serverBootstrap.group(boss, work)
+                    .channel(NioServerSocketChannel.class)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel serverSocketChannel) throws Exception {
+                            serverSocketChannel.pipeline().addLast(null);
+                        }
+                    });
+            ChannelFuture channelFuture = serverBootstrap.bind(8080).sync();
+            channelFuture.channel().closeFuture().sync();
+
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
+        } finally {
+            try {
+                boss.shutdownGracefully().sync();
+                work.shutdownGracefully().sync();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 

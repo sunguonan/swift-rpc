@@ -29,7 +29,9 @@ public class RegisterConfig {
      * @return Registry 具体的数据中心实例
      */
     public Registry getRegister() {
+        // 获取连接的类型
         String registerType = getRegisterType(connectString, true).toLowerCase().trim();
+        // 判断连接类型 并建立联机
         if (registerType.equals("zookeeper")) {
             String registerHost = getRegisterType(connectString, false);
             return new ZookeeperRegister(registerHost, Constant.DEFAULT_ZK_Session_Timeout);
@@ -40,9 +42,9 @@ public class RegisterConfig {
     /**
      * 获取连接url的类型和端口号
      *
-     * @param connectString
-     * @param ifType
-     * @return
+     * @param connectString 连接的url
+     * @param ifType        是否获取连接类型
+     * @return typeAndHost[0] 连接类型  | typeAndHost[1] 连接的host
      */
     public String getRegisterType(String connectString, boolean ifType) {
         String[] typeAndHost = connectString.split("://");
