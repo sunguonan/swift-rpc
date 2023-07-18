@@ -4,15 +4,21 @@ import com.swift.discovery.NettyBootstrapInitializer;
 import com.swift.discovery.Registry;
 import com.swift.exception.NetworkException;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
+ * 服务调用者封装具体需要调用那个接口下的方法
+ *
  * @author sunGuoNan
  * @version 1.0
  */
@@ -58,7 +64,7 @@ public class ReferenceConfig<T> {
         // 使用动态代理生成代理对象  代理对象 --> 发送请求 处理远程调用的内容
         Object proxy = Proxy.newProxyInstance(classLoader, interfaces, new InvocationHandler() {
             @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws InterruptedException {
+            public Object invoke(Object proxy, Method method, Object[] args) throws InterruptedException, ExecutionException, TimeoutException {
                 // 调用sayHi方法会走入到这个代码段中  method 获取具体方法  args 获取参数列表
 
                 // 1. 从注册中心找到一个可用的服务
@@ -77,18 +83,49 @@ public class ReferenceConfig<T> {
 
                 if (channel == null) {
                     // 创建新连接 并缓存channel
-                    channel = NettyBootstrapInitializer.getBootstrap()
-                            .connect(inetSocketAddress).await().channel();
+                    // 同步策略
+                    // channel = NettyBootstrapInitializer.getBootstrap().connect(inetSocketAddress).await().channel();
+                    CompletableFuture<Channel> channelFuture = new CompletableFuture<>();
+                    // 使用异步策略
+                    NettyBootstrapInitializer.getBootstrap().connect(inetSocketAddress)
+                            .addListener((ChannelFutureListener) promise -> {
+                                // 判断是否执行完成
+                                if (promise.isDone()) {
+                                    log.debug("异步任务执行完成");
+                                    // 异步的 我们已经完成
+                                    channelFuture.complete(promise.channel());
+                                } else if (!promise.isSuccess()) {
+                                    log.debug("异步任务完成失败", promise.cause());
+                                    // 处理异常
+                                    channelFuture.completeExceptionally(promise.cause());
+                                }
+                            });
+
+                    // 阻塞获取channel 也是一个同步操作  
+                    channel = channelFuture.get(5, TimeUnit.SECONDS);
+                    // 缓存channel
                     RpcBootStrap.CHANNEL_CACHE.put(inetSocketAddress, channel);
                 }
 
                 if (channel == null) {
+                    log.error("获取通道发生异常{}", channel);
                     throw new NetworkException("获取通道发生异常");
                 }
 
-                ChannelFuture channelFuture = channel.writeAndFlush(null);
+                // TODO 需要将 objectFuture 暴露出去
+                CompletableFuture<Object> objectFuture = new CompletableFuture<>();
+                channel.writeAndFlush(new Object())
+                        .addListener((ChannelFutureListener) promise -> {
+                            // 异步任务不能完成的情况
+                            if (!promise.isSuccess()) {
+                                log.debug("异步任务完成失败", promise.cause());
+                                // 处理异常
+                                objectFuture.completeExceptionally(promise.cause());
+                            }
+                        });
 
-                return null;
+                // 返回结果是 服务提供者返回的最后结果
+                return objectFuture.get(3, TimeUnit.SECONDS);
             }
         });
         return (T) proxy;
