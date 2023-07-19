@@ -1,8 +1,11 @@
 package com.swift.channelhandler;
 
 import com.swift.channelhandler.handler.MySimpleChannelInboundHandler;
+import com.swift.transport.message.RpcMessageEncoder;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 
 /**
  * 通道的初始化器 在初始化器中可以添加很多个处理器handler 执行操作
@@ -18,6 +21,11 @@ public class ConsumerChannelInitializer extends ChannelInitializer<SocketChannel
      */
     @Override
     protected void initChannel(SocketChannel socketChannel) {
-        socketChannel.pipeline().addLast(new MySimpleChannelInboundHandler());
+        socketChannel.pipeline()
+                // 添加netty自带的log处理器
+                .addLast(new LoggingHandler(LogLevel.DEBUG))
+                // 消息编码器
+                .addLast(new RpcMessageEncoder())
+                .addLast(new MySimpleChannelInboundHandler());
     }
 }

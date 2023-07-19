@@ -50,7 +50,7 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcRequest> {
         byteBuf.writerIndex(8);
         byteBuf.writeInt(MessageFormatConstant.HEADER_LENGTH + body.length);
         // 写指针归位
-        byteBuf.writeInt(writerIndex);
+        byteBuf.writerIndex(writerIndex);
 
     }
 
@@ -61,6 +61,7 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcRequest> {
      * @return 字节数组
      */
     private byte[] getBodyBytes(RequestPayload requestPayload) {
+        // TODO  针对不同的消息类型需要做不同的处理 心跳检测,没有payload
         // 进行序列化
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = null;
