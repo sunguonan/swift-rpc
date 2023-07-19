@@ -16,6 +16,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -34,10 +35,12 @@ public class RpcBootStrap {
     private String appName = "default";
     private RegisterConfig registerConfig;
     private ProtocolConfig protocolConfig;
+    // 连接channel缓存 key InetSocketAddress  value Channel
     public static final Map<InetSocketAddress, Channel> CHANNEL_CACHE = new ConcurrentHashMap<>(16);
+    // 定义全局挂起的CompletableFuture
+    public final static Map<Long, CompletableFuture<Object>> PENDING_REQUEST = new ConcurrentHashMap<>(128);
     // 维护暴露的服务列表  key --> interface的全限定名称 value ServiceConfig
-    private static final Map<String, ServiceConfig<?>> SERVICE_LIST =
-            new ConcurrentHashMap<>(16);
+    private static final Map<String, ServiceConfig<?>> SERVICE_LIST = new ConcurrentHashMap<>(16);
     // 注册中心
     private Registry registry;
 

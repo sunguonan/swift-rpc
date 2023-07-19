@@ -94,7 +94,7 @@ public class ReferenceConfig<T> {
                                 // 判断是否执行完成
                                 if (promise.isDone()) {
                                     log.debug("异步任务执行完成");
-                                    // 异步的 我们已经完成
+                                    // 异步的获取channel 我们已经完成
                                     channelFuture.complete(promise.channel());
                                 } else if (!promise.isSuccess()) {
                                     log.debug("异步任务完成失败", promise.cause());
@@ -114,8 +114,12 @@ public class ReferenceConfig<T> {
                     throw new NetworkException("获取通道发生异常");
                 }
 
-                // TODO 需要将 objectFuture 暴露出去
+                // 将objectFuture暴露出去 方便让接收的pipeline处理对应的消息 并保存到completableFuture中
                 CompletableFuture<Object> objectFuture = new CompletableFuture<>();
+                // 挂起objectFuture
+                RpcBootStrap.PENDING_REQUEST.put(1L, objectFuture);
+
+                // 调用服务者写出数据 
                 channel.writeAndFlush(Unpooled.copiedBuffer("hi".getBytes(StandardCharsets.UTF_8)))
                         .addListener((ChannelFutureListener) promise -> {
                             // 异步任务不能完成的情况
@@ -126,9 +130,8 @@ public class ReferenceConfig<T> {
                             }
                         });
 
-                // 返回结果是 服务提供者返回的最后结果
-                // Object o = objectFuture.get(3, TimeUnit.SECONDS);
-                return null;
+                // 返回结果是 服务提供者返回的最后结果 也就是从接收的pipeline的completableFuture中获取结果
+                return objectFuture.get(10, TimeUnit.SECONDS);
             }
         });
         return (T) proxy;

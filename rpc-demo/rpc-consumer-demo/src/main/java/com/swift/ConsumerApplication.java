@@ -1,11 +1,13 @@
 package com.swift;
 
 import com.swift.discovery.RegisterConfig;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author sunGuoNan
  * @version 1.0
  */
+@Slf4j
 public class ConsumerApplication {
     public static void main(String[] args) {
         // 1. 获取代理对象 并且使用ReferenceConfig进行封装
@@ -30,6 +32,7 @@ public class ConsumerApplication {
 
         // 调用get方法获取代理对象
         HelloRpc helloRpc = reference.get();
-        helloRpc.sayHi("hello rpc");
+        String rpc = helloRpc.sayHi("hello rpc");
+        log.debug("rpc--->{}", rpc);
     }
 }
