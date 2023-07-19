@@ -4,7 +4,8 @@ import com.swift.RpcBootStrap;
 import com.swift.discovery.NettyBootstrapInitializer;
 import com.swift.discovery.Registry;
 import com.swift.exception.NetworkException;
-import io.netty.buffer.Unpooled;
+import com.swift.transport.message.RequestPayload;
+import com.swift.transport.message.RpcRequest;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -56,15 +56,29 @@ public class ConsumerInvocationHandler implements InvocationHandler {
         Channel channel = getAvailableChannel(inetSocketAddress);
         log.debug("服务调用方获取一个可用通道{}", channel);
 
-        // TODO 3. 封装报文
+        // 3. 封装报文
+        RequestPayload requestPayload = RequestPayload.builder()
+                .interfaceName(interfaceConsumer.getName())
+                .methodName(method.getName())
+                .parametersType(method.getParameterTypes())
+                .parametersValue(args)
+                .returnType(method.getReturnType()).build();
+
+        RpcRequest rpcRequest = RpcRequest.builder()
+                .requestId(1L)
+                .requestType((byte) 1)
+                .compressType((byte) 1)
+                .serializeType((byte) 1)
+                .timeStamp(System.currentTimeMillis())
+                .requestPayload(requestPayload).build();
 
         // 4. 写出报文
         // 将objectFuture暴露出去 方便让接收的pipeline处理对应的消息 并保存到completableFuture中
         CompletableFuture<Object> objectFuture = new CompletableFuture<>();
         // 挂起objectFuture 暴露CompletableFuture
         RpcBootStrap.PENDING_REQUEST.put(1L, objectFuture);
-        // 写出数据 
-        channel.writeAndFlush(Unpooled.copiedBuffer("hi".getBytes(StandardCharsets.UTF_8)))
+        // 写出数据 这个请求的实例会进入pipeline 会执行出栈等一系列操作 第一个进入处理器的一定是将对象转化为二进制数据
+        channel.writeAndFlush(rpcRequest)
                 .addListener((ChannelFutureListener) promise -> {
                     // 异步任务不能完成的情况
                     if (!promise.isSuccess()) {
