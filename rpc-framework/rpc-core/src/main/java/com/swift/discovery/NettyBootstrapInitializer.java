@@ -2,9 +2,7 @@ package com.swift.discovery;
 
 import com.swift.channelhandler.ConsumerChannelInitializer;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,12 +24,7 @@ public class NettyBootstrapInitializer {
                 // 添加通道
                 .channel(NioSocketChannel.class)
                 // 添加处理器
-                .handler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    protected void initChannel(SocketChannel socketChannel) throws Exception {
-                        socketChannel.pipeline().addLast(new ConsumerChannelInitializer());
-                    }
-                });
+                .handler(new ConsumerChannelInitializer());
     }
 
 

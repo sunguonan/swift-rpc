@@ -26,6 +26,7 @@ public class ConsumerChannelInitializer extends ChannelInitializer<SocketChannel
                 .addLast(new LoggingHandler(LogLevel.DEBUG))
                 // 消息编码器
                 .addLast(new RpcMessageEncoder())
+                // 自定义消息接收处理器
                 .addLast(new MySimpleChannelInboundHandler());
     }
 }

@@ -31,25 +31,28 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcRequest> {
         byteBuf.writeBytes(MessageFormatConstant.MAGIC);
         // 1个字节的版本号
         byteBuf.writeByte(MessageFormatConstant.VERSION);
-        // 2个字节的头部长度
+        // 2个字节的头部的长度
         byteBuf.writeShort(MessageFormatConstant.HEADER_LENGTH);
-        // 4个字节的总占用长度   full length
-        byteBuf.writeShort(byteBuf.writerIndex() + 4);
-        // 3个类型占用的字节数
+        // 总长度不清楚，不知道body的长度 writeIndex(写指针)
+        byteBuf.writerIndex(byteBuf.writerIndex() + 4);
+        // 3个类型
         byteBuf.writeByte(rpcRequest.getRequestType());
         byteBuf.writeByte(rpcRequest.getSerializeType());
         byteBuf.writeByte(rpcRequest.getCompressType());
-        // 8个字节的请求id
+        // 8字节的请求id
         byteBuf.writeLong(rpcRequest.getRequestId());
+        // 写入请求体（requestPayload）
         byte[] body = getBodyBytes(rpcRequest.getRequestPayload());
         byteBuf.writeBytes(body);
 
-        // 保存当前写指针的位置
+        // 重新处理报文的总长度
+        // 先保存当前的写指针的位置
         int writerIndex = byteBuf.writerIndex();
-        // 将写指针移动到写入(总长度的位置) 
+        // 将写指针的位置移动到总长度的位置上
         byteBuf.writerIndex(8);
         byteBuf.writeInt(MessageFormatConstant.HEADER_LENGTH + body.length);
-        // 写指针归位
+
+        // 将写指针归位
         byteBuf.writerIndex(writerIndex);
 
     }
@@ -61,19 +64,17 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcRequest> {
      * @return 字节数组
      */
     private byte[] getBodyBytes(RequestPayload requestPayload) {
-        // TODO  针对不同的消息类型需要做不同的处理 心跳检测,没有payload
-        // 进行序列化
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = null;
+        // TODO 针对不同的消息类型需要做不同的处理，心跳的请求，没有payload
+
         try {
-            oos = new ObjectOutputStream(bos);
-            oos.writeObject(requestPayload);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream outputStream = new ObjectOutputStream(baos);
+            outputStream.writeObject(requestPayload);
             // TODO 压缩
-            return bos.toByteArray();
+            return baos.toByteArray();
         } catch (IOException e) {
-            log.debug("转换对象为字节数组失败", e);
+            log.error("转换对象为字节数组失败", e);
             throw new RuntimeException(e);
         }
-
     }
 }
