@@ -1,5 +1,8 @@
-package com.swift.transport.message;
+package com.swift.channelhandler.handler;
 
+import com.swift.transport.message.MessageFormatConstant;
+import com.swift.transport.message.RequestPayload;
+import com.swift.transport.message.RpcRequest;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
@@ -34,23 +37,28 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcRequest> {
         // 2个字节的头部的长度
         byteBuf.writeShort(MessageFormatConstant.HEADER_LENGTH);
         // 总长度不清楚，不知道body的长度 writeIndex(写指针)
-        byteBuf.writerIndex(byteBuf.writerIndex() + 4);
+        byteBuf.writerIndex(byteBuf.writerIndex() + MessageFormatConstant.FULL_FIELD_LENGTH);
         // 3个类型
         byteBuf.writeByte(rpcRequest.getRequestType());
         byteBuf.writeByte(rpcRequest.getSerializeType());
         byteBuf.writeByte(rpcRequest.getCompressType());
         // 8字节的请求id
         byteBuf.writeLong(rpcRequest.getRequestId());
+
         // 写入请求体（requestPayload）
         byte[] body = getBodyBytes(rpcRequest.getRequestPayload());
-        byteBuf.writeBytes(body);
-
+        if (body != null) {
+            byteBuf.writeBytes(body);
+        }
+        // 获取body长度
+        int bodyLength = body == null ? 0 : body.length;
         // 重新处理报文的总长度
         // 先保存当前的写指针的位置
         int writerIndex = byteBuf.writerIndex();
         // 将写指针的位置移动到总长度的位置上
-        byteBuf.writerIndex(8);
-        byteBuf.writeInt(MessageFormatConstant.HEADER_LENGTH + body.length);
+        byteBuf.writerIndex(MessageFormatConstant.MAGIC.length
+                + MessageFormatConstant.VERSION_LENGTH + MessageFormatConstant.HEADER_FIELD_LENGTH);
+        byteBuf.writeInt(MessageFormatConstant.HEADER_LENGTH + bodyLength);
 
         // 将写指针归位
         byteBuf.writerIndex(writerIndex);
@@ -65,6 +73,9 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcRequest> {
      */
     private byte[] getBodyBytes(RequestPayload requestPayload) {
         // TODO 针对不同的消息类型需要做不同的处理，心跳的请求，没有payload
+        if (requestPayload == null) {
+            return null;
+        }
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

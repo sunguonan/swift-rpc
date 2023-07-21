@@ -1,7 +1,7 @@
 package com.swift.channelhandler;
 
 import com.swift.channelhandler.handler.MySimpleChannelInboundHandler;
-import com.swift.transport.message.RpcMessageEncoder;
+import com.swift.channelhandler.handler.RpcMessageEncoder;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.logging.LogLevel;

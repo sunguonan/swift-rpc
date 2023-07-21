@@ -1,8 +1,9 @@
 package com.swift;
 
+import com.swift.channelhandler.handler.MethodCallHandler;
+import com.swift.channelhandler.handler.RpcResponseDecoder;
 import com.swift.discovery.RegisterConfig;
 import com.swift.discovery.Registry;
-import com.swift.transport.message.RpcResponseDecoder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -40,7 +41,7 @@ public class RpcBootStrap {
     // 定义全局挂起的CompletableFuture
     public final static Map<Long, CompletableFuture<Object>> PENDING_REQUEST = new ConcurrentHashMap<>(128);
     // 维护暴露的服务列表  key --> interface的全限定名称 value ServiceConfig
-    private static final Map<String, ServiceConfig<?>> SERVICE_LIST = new ConcurrentHashMap<>(16);
+    public static final Map<String, ServiceConfig<?>> SERVICE_LIST = new ConcurrentHashMap<>(16);
     // 注册中心
     private Registry registry;
 
@@ -137,8 +138,13 @@ public class RpcBootStrap {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
-                            socketChannel.pipeline().addLast(new LoggingHandler())
-                                    .addLast(new RpcResponseDecoder());
+                            socketChannel.pipeline()
+                                    // 日志处理器
+                                    .addLast(new LoggingHandler())
+                                    // 消息解码器
+                                    .addLast(new RpcResponseDecoder())
+                                    // 方法调用器
+                                    .addLast(new MethodCallHandler());
                         }
                     });
             ChannelFuture channelFuture = serverBootstrap.bind(8088).sync();

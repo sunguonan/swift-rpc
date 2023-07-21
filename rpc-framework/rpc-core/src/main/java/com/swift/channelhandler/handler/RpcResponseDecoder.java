@@ -1,5 +1,9 @@
-package com.swift.transport.message;
+package com.swift.channelhandler.handler;
 
+import com.swift.enumeration.RequestType;
+import com.swift.transport.message.MessageFormatConstant;
+import com.swift.transport.message.RequestPayload;
+import com.swift.transport.message.RpcRequest;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -26,7 +30,7 @@ public class RpcResponseDecoder extends LengthFieldBasedFrameDecoder {
                 MessageFormatConstant.MAGIC.length + MessageFormatConstant.VERSION_LENGTH + MessageFormatConstant.HEADER_FIELD_LENGTH,
                 // 长度的字段的长度
                 MessageFormatConstant.FULL_FIELD_LENGTH,
-                // todo 负载的适配长度
+                // 负载的适配长度
                 -(MessageFormatConstant.MAGIC.length + MessageFormatConstant.VERSION_LENGTH
                         + MessageFormatConstant.HEADER_FIELD_LENGTH + MessageFormatConstant.FULL_FIELD_LENGTH),
                 0);
@@ -65,7 +69,7 @@ public class RpcResponseDecoder extends LengthFieldBasedFrameDecoder {
         // 4、解析总长度
         int fullLength = byteBuf.readInt();
 
-        // 5、请求类型,todo 判断是不是心跳检测
+        // 5、请求类型
         byte requestType = byteBuf.readByte();
 
         // 6、序列化类型
@@ -83,8 +87,8 @@ public class RpcResponseDecoder extends LengthFieldBasedFrameDecoder {
         RpcRequest.setCompressType(compressType);
         RpcRequest.setSerializeType(serializeType);
 
-        // todo 心跳请求没有负载，此处可以判断并直接返回
-        if (requestType == 2) {
+        // 心跳请求没有负载，此处可以判断并直接返回
+        if (requestType == RequestType.HEART_BEAT.getId()) {
             return RpcRequest;
         }
 
