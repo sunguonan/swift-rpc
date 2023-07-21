@@ -1,7 +1,9 @@
 package com.swift.channelhandler.handler;
 
+import com.swift.enumeration.RequestType;
 import com.swift.transport.message.MessageFormatConstant;
-import com.swift.transport.message.RpcResponse;
+import com.swift.transport.message.RequestPayload;
+import com.swift.transport.message.RpcRequest;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -18,8 +20,8 @@ import java.io.ObjectInputStream;
  * @version 1.0
  */
 @Slf4j
-public class RpcResponseDecoder extends LengthFieldBasedFrameDecoder {
-    public RpcResponseDecoder() {
+public class RpcRequestDecoder extends LengthFieldBasedFrameDecoder {
+    public RpcRequestDecoder() {
         super(
                 // 找到当前报文的总长度，截取报文，截取出来的报文我们可以去进行解析
                 // 最大帧的长度，超过这个maxFrameLength值会直接丢弃
@@ -68,7 +70,7 @@ public class RpcResponseDecoder extends LengthFieldBasedFrameDecoder {
         int fullLength = byteBuf.readInt();
 
         // 5、请求类型
-        byte responseCode = byteBuf.readByte();
+        byte requestType = byteBuf.readByte();
 
         // 6、序列化类型
         byte serializeType = byteBuf.readByte();
@@ -80,19 +82,19 @@ public class RpcResponseDecoder extends LengthFieldBasedFrameDecoder {
         long requestId = byteBuf.readLong();
 
         // 我们需要封装
-        RpcResponse rpcResponse = new RpcResponse();
-        rpcResponse.setCode(responseCode);
-        rpcResponse.setCompressType(compressType);
-        rpcResponse.setSerializeType(serializeType);
-        rpcResponse.setRequestId(requestId);
+        RpcRequest rpcRequest = new RpcRequest();
+        rpcRequest.setRequestType(requestType);
+        rpcRequest.setCompressType(compressType);
+        rpcRequest.setSerializeType(serializeType);
+        rpcRequest.setRequestId(requestId);
 
         // 心跳请求没有负载，此处可以判断并直接返回
-        // if (requestType == RequestType.HEART_BEAT.getId()) {
-        //     return rpcResponse;
-        // }
+        if (requestType == RequestType.HEART_BEAT.getId()) {
+            return rpcRequest;
+        }
 
-        int bodyLength = fullLength - headLength;
-        byte[] payload = new byte[bodyLength];
+        int payloadLength = fullLength - headLength;
+        byte[] payload = new byte[payloadLength];
         byteBuf.readBytes(payload);
 
         // 有了字节数组之后就可以解压缩，反序列化
@@ -102,14 +104,14 @@ public class RpcResponseDecoder extends LengthFieldBasedFrameDecoder {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(payload);
              ObjectInputStream ois = new ObjectInputStream(bis)
         ) {
-            Object object = ois.readObject();
-            rpcResponse.setBody(object);
+            RequestPayload requestPayload = (RequestPayload) ois.readObject();
+            rpcRequest.setRequestPayload(requestPayload);
         } catch (IOException | ClassNotFoundException e) {
             log.error("请求【{}】反序列化时发生了异常", requestId, e);
         }
 
-        log.debug("响应【{}】已经在调用端完成解码工作。", rpcResponse.getRequestId());
+        log.debug("请求【{}】已经在服务端完成解码工作。", rpcRequest.getRequestId());
 
-        return rpcResponse;
+        return rpcRequest;
     }
 }

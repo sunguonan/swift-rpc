@@ -1,8 +1,7 @@
 package com.swift.channelhandler.handler;
 
 import com.swift.transport.message.MessageFormatConstant;
-import com.swift.transport.message.RequestPayload;
-import com.swift.transport.message.RpcRequest;
+import com.swift.transport.message.RpcResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
@@ -13,23 +12,32 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 
 /**
- * 消息转化器  封装报文 将需要发送的消息进行转化 转化为二进制数组
+ * <pre>
+ *   0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15   16   17   18   19   20   21   22   23
+ * +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+ * |    magic               |ver |head len|    full length    | code | ser|comp|              RequestId               |
+ * +-----+-----+-------+----+----+----+----+-----------+----- ---+--------+----+----+----+----+----+----+---+---+---+-+
+ * |                                                                                                                  |
+ * |                                         body                                                                     |
+ * |                                                                                                                  |
+ * +--------------------------------------------------------------------------------------------------------+---+---+-+
+ *  </pre>
  *
  * @author sunGuoNan
  * @version 1.0
  */
 @Slf4j
-public class RpcMessageEncoder extends MessageToByteEncoder<RpcRequest> {
+public class RpcResponseEncoder extends MessageToByteEncoder<RpcResponse> {
     /**
      * 将需要发送的消息进行编码 转化为二进制数组
      *
      * @param channelHandlerContext
-     * @param rpcRequest
+     * @param rpcResponse
      * @param byteBuf
      * @throws Exception
      */
     @Override
-    protected void encode(ChannelHandlerContext channelHandlerContext, RpcRequest rpcRequest, ByteBuf byteBuf) throws Exception {
+    protected void encode(ChannelHandlerContext channelHandlerContext, RpcResponse rpcResponse, ByteBuf byteBuf) throws Exception {
         // 5个字节的魔术值
         byteBuf.writeBytes(MessageFormatConstant.MAGIC);
         // 1个字节的版本号
@@ -39,14 +47,14 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcRequest> {
         // 总长度不清楚，不知道body的长度 writeIndex(写指针)
         byteBuf.writerIndex(byteBuf.writerIndex() + MessageFormatConstant.FULL_FIELD_LENGTH);
         // 3个类型
-        byteBuf.writeByte(rpcRequest.getRequestType());
-        byteBuf.writeByte(rpcRequest.getSerializeType());
-        byteBuf.writeByte(rpcRequest.getCompressType());
+        byteBuf.writeByte(rpcResponse.getCode());
+        byteBuf.writeByte(rpcResponse.getSerializeType());
+        byteBuf.writeByte(rpcResponse.getCompressType());
         // 8字节的请求id
-        byteBuf.writeLong(rpcRequest.getRequestId());
+        byteBuf.writeLong(rpcResponse.getRequestId());
 
         // 写入请求体（requestPayload）
-        byte[] body = getBodyBytes(rpcRequest.getRequestPayload());
+        byte[] body = getBodyBytes(rpcResponse.getBody());
         if (body != null) {
             byteBuf.writeBytes(body);
         }
@@ -63,24 +71,25 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcRequest> {
         // 将写指针归位
         byteBuf.writerIndex(writerIndex);
 
+        log.debug("响应【{}】已经在服务端完成编码工作。", rpcResponse.getRequestId());
     }
 
     /**
      * 将对象序列化为字节数组
      *
-     * @param requestPayload 对象实体
+     * @param body 对象实体
      * @return 字节数组
      */
-    private byte[] getBodyBytes(RequestPayload requestPayload) {
+    private byte[] getBodyBytes(Object body) {
         // TODO 针对不同的消息类型需要做不同的处理，心跳的请求，没有payload
-        if (requestPayload == null) {
+        if (body == null) {
             return null;
         }
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream outputStream = new ObjectOutputStream(baos);
-            outputStream.writeObject(requestPayload);
+            outputStream.writeObject(body);
             // TODO 压缩
             return baos.toByteArray();
         } catch (IOException e) {

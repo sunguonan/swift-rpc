@@ -1,7 +1,8 @@
 package com.swift.channelhandler;
 
 import com.swift.channelhandler.handler.MySimpleChannelInboundHandler;
-import com.swift.channelhandler.handler.RpcMessageEncoder;
+import com.swift.channelhandler.handler.RpcRequestEncoder;
+import com.swift.channelhandler.handler.RpcResponseDecoder;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.logging.LogLevel;
@@ -25,7 +26,9 @@ public class ConsumerChannelInitializer extends ChannelInitializer<SocketChannel
                 // 添加netty自带的log处理器
                 .addLast(new LoggingHandler(LogLevel.DEBUG))
                 // 消息编码器
-                .addLast(new RpcMessageEncoder())
+                .addLast(new RpcRequestEncoder())
+                // 入栈的解码器
+                .addLast(new RpcResponseDecoder())
                 // 自定义消息接收处理器
                 .addLast(new MySimpleChannelInboundHandler());
     }

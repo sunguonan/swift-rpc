@@ -1,7 +1,8 @@
 package com.swift;
 
 import com.swift.channelhandler.handler.MethodCallHandler;
-import com.swift.channelhandler.handler.RpcResponseDecoder;
+import com.swift.channelhandler.handler.RpcRequestDecoder;
+import com.swift.channelhandler.handler.RpcResponseEncoder;
 import com.swift.discovery.RegisterConfig;
 import com.swift.discovery.Registry;
 import io.netty.bootstrap.ServerBootstrap;
@@ -142,9 +143,11 @@ public class RpcBootStrap {
                                     // 日志处理器
                                     .addLast(new LoggingHandler())
                                     // 消息解码器
-                                    .addLast(new RpcResponseDecoder())
+                                    .addLast(new RpcRequestDecoder())
                                     // 方法调用器
-                                    .addLast(new MethodCallHandler());
+                                    .addLast(new MethodCallHandler())
+                                    // 进行响应编码
+                                    .addLast(new RpcResponseEncoder());
                         }
                     });
             ChannelFuture channelFuture = serverBootstrap.bind(8088).sync();
