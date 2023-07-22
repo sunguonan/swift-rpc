@@ -25,6 +25,7 @@
         <lombok.version>1.18.24</lombok.version>
         <commons.version>3.12.0</commons.version>
         <slf4j.version>1.7.30</slf4j.version>
+        <hession.version>4.0.38</hession.version>
     </properties>
 
     <dependencyManagement>
@@ -59,6 +60,16 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bbossgroups</groupId>
+                <artifactId>bboss-hession</artifactId>
+                <version>${hession.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.caucho</groupId>
+                <artifactId>hessian</artifactId>
+                <version>${hession.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

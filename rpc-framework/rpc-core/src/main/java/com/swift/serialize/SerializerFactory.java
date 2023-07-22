@@ -1,5 +1,6 @@
 package com.swift.serialize;
 
+import com.swift.serialize.impl.HessianSerializer;
 import com.swift.serialize.impl.JdkSerializer;
 import com.swift.serialize.impl.JsonSerializer;
 
@@ -18,11 +19,14 @@ public class SerializerFactory {
     static {
         SerializerWrapper jdk = new SerializerWrapper((byte) 1, "jdk", new JdkSerializer());
         SerializerWrapper json = new SerializerWrapper((byte) 2, "json", new JsonSerializer());
+        SerializerWrapper hessian = new SerializerWrapper((byte) 3, "hessian", new HessianSerializer());
         SERIALIZER_CACHE.put("jdk", jdk);
         SERIALIZER_CACHE.put("json", json);
+        SERIALIZER_CACHE.put("hessian", hessian);
 
         SERIALIZER_CACHE_CODE.put((byte) 1, jdk);
         SERIALIZER_CACHE_CODE.put((byte) 2, json);
+        SERIALIZER_CACHE_CODE.put((byte) 3, hessian);
     }
 
     /**
