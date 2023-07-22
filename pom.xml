@@ -26,6 +26,7 @@
         <commons.version>3.12.0</commons.version>
         <slf4j.version>1.7.30</slf4j.version>
         <hession.version>4.0.38</hession.version>
+        <fastjson.version>2.0.33</fastjson.version>
     </properties>
 
     <dependencyManagement>
@@ -62,14 +63,14 @@
                 <version>${commons.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.bbossgroups</groupId>
-                <artifactId>bboss-hession</artifactId>
-                <version>${hession.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>com.caucho</groupId>
                 <artifactId>hessian</artifactId>
                 <version>${hession.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.fastjson2</groupId>
+                <artifactId>fastjson2</artifactId>
+                <version>${fastjson.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
