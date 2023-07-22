@@ -5,6 +5,7 @@ import com.swift.discovery.NettyBootstrapInitializer;
 import com.swift.discovery.Registry;
 import com.swift.enumeration.RequestType;
 import com.swift.exception.NetworkException;
+import com.swift.serialize.SerializerFactory;
 import com.swift.transport.message.RequestPayload;
 import com.swift.transport.message.RpcRequest;
 import io.netty.channel.Channel;
@@ -69,7 +70,7 @@ public class ConsumerInvocationHandler implements InvocationHandler {
                 .requestId(RpcBootStrap.ID_GENERATOR.getId())
                 .requestType(RequestType.REQUEST.getId())
                 .compressType((byte) 1)
-                .serializeType((byte) 1)
+                .serializeType(SerializerFactory.getSerializer(RpcBootStrap.SERIALIZE_TYPE).getCode())
                 .timeStamp(System.currentTimeMillis())
                 .requestPayload(requestPayload).build();
 

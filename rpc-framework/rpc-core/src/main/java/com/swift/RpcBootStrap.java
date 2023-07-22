@@ -34,6 +34,7 @@ public class RpcBootStrap {
      * 单例 --> 懒汉式  私有化构造器  别人不能new
      */
     private static final RpcBootStrap rpcBootStrap = new RpcBootStrap();
+    public static String SERIALIZE_TYPE = "jdk";
     private String appName = "default";
     private RegisterConfig registerConfig;
     private ProtocolConfig protocolConfig;
@@ -175,6 +176,17 @@ public class RpcBootStrap {
     public RpcBootStrap reference(ReferenceConfig<?> reference) {
         // 获取注册中心
         reference.setRegistry(registry);
+        return this;
+    }
+
+    /**
+     * 配置序列化器
+     *
+     * @param serializeName
+     * @return
+     */
+    public RpcBootStrap serialize(String serializeName) {
+        SERIALIZE_TYPE = serializeName;
         return this;
     }
 }

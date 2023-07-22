@@ -1,15 +1,13 @@
 package com.swift.channelhandler.handler;
 
+import com.swift.serialize.Serializer;
+import com.swift.serialize.SerializerFactory;
 import com.swift.transport.message.MessageFormatConstant;
 import com.swift.transport.message.RpcResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 
 /**
  * <pre>
@@ -54,7 +52,11 @@ public class RpcResponseEncoder extends MessageToByteEncoder<RpcResponse> {
         byteBuf.writeLong(rpcResponse.getRequestId());
 
         // 写入请求体（requestPayload）
-        byte[] body = getBodyBytes(rpcResponse.getBody());
+        Serializer serializer = SerializerFactory.getSerializer(rpcResponse.getSerializeType()).getSerializer();
+        byte[] body = serializer.serialize(rpcResponse.getBody());
+
+        // TODO 压缩 
+        
         if (body != null) {
             byteBuf.writeBytes(body);
         }
@@ -72,29 +74,5 @@ public class RpcResponseEncoder extends MessageToByteEncoder<RpcResponse> {
         byteBuf.writerIndex(writerIndex);
 
         log.debug("响应【{}】已经在服务端完成编码工作。", rpcResponse.getRequestId());
-    }
-
-    /**
-     * 将对象序列化为字节数组
-     *
-     * @param body 对象实体
-     * @return 字节数组
-     */
-    private byte[] getBodyBytes(Object body) {
-        // TODO 针对不同的消息类型需要做不同的处理，心跳的请求，没有payload
-        if (body == null) {
-            return null;
-        }
-
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream outputStream = new ObjectOutputStream(baos);
-            outputStream.writeObject(body);
-            // TODO 压缩
-            return baos.toByteArray();
-        } catch (IOException e) {
-            log.error("转换对象为字节数组失败", e);
-            throw new RuntimeException(e);
-        }
     }
 }

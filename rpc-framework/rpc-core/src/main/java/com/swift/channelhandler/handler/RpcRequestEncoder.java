@@ -1,16 +1,14 @@
 package com.swift.channelhandler.handler;
 
+import com.swift.RpcBootStrap;
+import com.swift.serialize.Serializer;
+import com.swift.serialize.SerializerFactory;
 import com.swift.transport.message.MessageFormatConstant;
-import com.swift.transport.message.RequestPayload;
 import com.swift.transport.message.RpcRequest;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 
 /**
  * 消息转化器  封装报文 将需要发送的消息进行转化 转化为二进制数组
@@ -46,7 +44,11 @@ public class RpcRequestEncoder extends MessageToByteEncoder<RpcRequest> {
         byteBuf.writeLong(rpcRequest.getRequestId());
 
         // 写入请求体（requestPayload）
-        byte[] body = getBodyBytes(rpcRequest.getRequestPayload());
+        // 进行序列化
+
+        Serializer serializer = SerializerFactory.getSerializer(RpcBootStrap.SERIALIZE_TYPE).getSerializer();
+        byte[] body = serializer.serialize(rpcRequest.getRequestPayload());
+        // 进行压缩
         if (body != null) {
             byteBuf.writeBytes(body);
         }
@@ -63,29 +65,5 @@ public class RpcRequestEncoder extends MessageToByteEncoder<RpcRequest> {
         // 将写指针归位
         byteBuf.writerIndex(writerIndex);
         log.debug("请求【{}】已经完成报文的编码。", rpcRequest.getRequestId());
-    }
-
-    /**
-     * 将对象序列化为字节数组
-     *
-     * @param requestPayload 对象实体
-     * @return 字节数组
-     */
-    private byte[] getBodyBytes(RequestPayload requestPayload) {
-        // TODO 针对不同的消息类型需要做不同的处理，心跳的请求，没有payload
-        if (requestPayload == null) {
-            return null;
-        }
-
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream outputStream = new ObjectOutputStream(baos);
-            outputStream.writeObject(requestPayload);
-            // TODO 压缩
-            return baos.toByteArray();
-        } catch (IOException e) {
-            log.error("转换对象为字节数组失败", e);
-            throw new RuntimeException(e);
-        }
     }
 }

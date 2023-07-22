@@ -1,6 +1,8 @@
 package com.swift.channelhandler.handler;
 
 import com.swift.enumeration.RequestType;
+import com.swift.serialize.Serializer;
+import com.swift.serialize.SerializerFactory;
 import com.swift.transport.message.MessageFormatConstant;
 import com.swift.transport.message.RequestPayload;
 import com.swift.transport.message.RpcRequest;
@@ -8,10 +10,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 
 /**
  * 自定义协议编码器
@@ -100,15 +98,10 @@ public class RpcRequestDecoder extends LengthFieldBasedFrameDecoder {
         // 有了字节数组之后就可以解压缩，反序列化
         // todo 解压缩
 
-        // todo 反序列化
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(payload);
-             ObjectInputStream ois = new ObjectInputStream(bis)
-        ) {
-            RequestPayload requestPayload = (RequestPayload) ois.readObject();
-            rpcRequest.setRequestPayload(requestPayload);
-        } catch (IOException | ClassNotFoundException e) {
-            log.error("请求【{}】反序列化时发生了异常", requestId, e);
-        }
+        // 反序列化 
+        Serializer serializer = SerializerFactory.getSerializer(serializeType).getSerializer();
+        RequestPayload requestPayload = serializer.deserialize(payload, RequestPayload.class);
+        rpcRequest.setRequestPayload(requestPayload);
 
         log.debug("请求【{}】已经在服务端完成解码工作。", rpcRequest.getRequestId());
 

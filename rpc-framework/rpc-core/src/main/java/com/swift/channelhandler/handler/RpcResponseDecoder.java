@@ -1,15 +1,13 @@
 package com.swift.channelhandler.handler;
 
+import com.swift.serialize.Serializer;
+import com.swift.serialize.SerializerFactory;
 import com.swift.transport.message.MessageFormatConstant;
 import com.swift.transport.message.RpcResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 
 /**
  * 自定义协议编码器
@@ -98,15 +96,10 @@ public class RpcResponseDecoder extends LengthFieldBasedFrameDecoder {
         // 有了字节数组之后就可以解压缩，反序列化
         // todo 解压缩
 
-        // todo 反序列化
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(payload);
-             ObjectInputStream ois = new ObjectInputStream(bis)
-        ) {
-            Object object = ois.readObject();
-            rpcResponse.setBody(object);
-        } catch (IOException | ClassNotFoundException e) {
-            log.error("请求【{}】反序列化时发生了异常", requestId, e);
-        }
+        // 反序列化
+        Serializer serializer = SerializerFactory.getSerializer(serializeType).getSerializer();
+        Object body = serializer.deserialize(payload, Object.class);
+        rpcResponse.setBody(body);
 
         log.debug("响应【{}】已经在调用端完成解码工作。", rpcResponse.getRequestId());
 

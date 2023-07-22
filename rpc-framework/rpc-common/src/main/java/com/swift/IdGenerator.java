@@ -1,6 +1,5 @@
 package com.swift;
 
-import java.util.Date;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
@@ -17,7 +16,7 @@ import java.util.concurrent.atomic.LongAdder;
 public class IdGenerator {
 
     // 起始时间戳
-    public static final long START_STAMP = DateUtil.get(new Date().toString()).getTime();
+    public static final long START_STAMP = DateUtil.get("2023-01-01").getTime();
     // 机房号
     public static final long DATA_CENTER_BIT = 5L;
     // 机器号
