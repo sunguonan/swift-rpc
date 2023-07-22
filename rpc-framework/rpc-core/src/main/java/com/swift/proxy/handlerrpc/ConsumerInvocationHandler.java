@@ -66,7 +66,7 @@ public class ConsumerInvocationHandler implements InvocationHandler {
                 .returnType(method.getReturnType()).build();
 
         RpcRequest rpcRequest = RpcRequest.builder()
-                .requestId(1L)
+                .requestId(RpcBootStrap.ID_GENERATOR.getId())
                 .requestType(RequestType.REQUEST.getId())
                 .compressType((byte) 1)
                 .serializeType((byte) 1)

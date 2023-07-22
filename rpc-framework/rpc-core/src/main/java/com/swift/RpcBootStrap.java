@@ -45,6 +45,7 @@ public class RpcBootStrap {
     public static final Map<String, ServiceConfig<?>> SERVICE_LIST = new ConcurrentHashMap<>(16);
     // 注册中心
     private Registry registry;
+    public static final IdGenerator ID_GENERATOR = new IdGenerator(1, 2);
 
     private RpcBootStrap() {
         // 私有化构造器  做一些初始化的事情
