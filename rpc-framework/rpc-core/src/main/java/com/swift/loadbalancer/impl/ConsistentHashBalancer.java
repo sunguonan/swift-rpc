@@ -1,8 +1,10 @@
 package com.swift.loadbalancer.impl;
 
 
+import com.swift.RpcBootStrap;
 import com.swift.loadbalancer.AbstractLoadBalancer;
 import com.swift.loadbalancer.Selector;
+import com.swift.transport.message.RpcRequest;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
@@ -49,23 +51,22 @@ public class ConsistentHashBalancer extends AbstractLoadBalancer {
         public InetSocketAddress getNext() {
             // 1、hash环已经建立好了，接下来需要对请求的要素做处理我们应该选择什么要素来进行hash运算
             // 有没有办法可以获取，到具体的请求内容  --> threadLocal
-            // YrpcRequest yrpcRequest = RpcBootStrap.REQUEST_THREAD_LOCAL.get();
+            RpcRequest rpcRequest = RpcBootStrap.REQUEST_THREAD_LOCAL.get();
 
             // 我们想根据请求的一些特征来选择服务器  id
-            // String requestId = Long.toString(yrpcRequest.getRequestId());
+            String requestId = Long.toString(rpcRequest.getRequestId());
 
             // 请求的id做hash，字符串默认的hash不太好
-            // int hash = hash(requestId);
+            int hash = hash(requestId);
 
             // 判断该hash值是否能直接落在一个服务器上，和服务器的hash一样
-            // if( !circle.containsKey(hash)){
-            //     // 寻找理我最近的一个节点
-            //     SortedMap<Integer, InetSocketAddress> tailMap = circle.tailMap(hash);
-            //     hash = tailMap.isEmpty() ? circle.firstKey() : tailMap.firstKey();
-            // }
-            //
-            // return circle.get(hash);
-            return null;
+            if (!circle.containsKey(hash)) {
+                // 寻找理我最近的一个节点
+                SortedMap<Integer, InetSocketAddress> tailMap = circle.tailMap(hash);
+                hash = tailMap.isEmpty() ? circle.firstKey() : tailMap.firstKey();
+            }
+
+            return circle.get(hash);
         }
 
         /**
@@ -95,7 +96,7 @@ public class ConsistentHashBalancer extends AbstractLoadBalancer {
         }
 
         /**
-         * 具体的hash算法, todo 小小的遗憾，这样也是不均匀的
+         * 具体的hash算法, 这样也是不均匀的
          *
          * @param s
          * @return

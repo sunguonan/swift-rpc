@@ -6,7 +6,7 @@ import com.swift.discovery.NettyBootstrapInitializer;
 import com.swift.discovery.Registry;
 import com.swift.enumeration.RequestType;
 import com.swift.exception.NetworkException;
-import com.swift.loadbalancer.impl.RoundRobinLoadBalancer;
+import com.swift.loadbalancer.impl.ConsistentHashBalancer;
 import com.swift.serialize.SerializerFactory;
 import com.swift.transport.message.RequestPayload;
 import com.swift.transport.message.RpcRequest;
@@ -50,16 +50,7 @@ public class ConsumerInvocationHandler implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {
 
-        // 1. 使用负载均衡策略获取主机
-        InetSocketAddress inetSocketAddress = new RoundRobinLoadBalancer()
-                .selectServiceAddress(interfaceConsumer.getName());
-        log.debug("服务调用方发现了可用主机{}", inetSocketAddress);
-
-        // 2. 获取一个可用通道
-        Channel channel = getAvailableChannel(inetSocketAddress);
-        log.debug("服务调用方获取一个可用通道{}", channel);
-
-        // 3. 封装报文
+        // 1. 封装报文 封装请求
         RequestPayload requestPayload = RequestPayload.builder()
                 .interfaceName(interfaceConsumer.getName())
                 .methodName(method.getName())
@@ -74,6 +65,18 @@ public class ConsumerInvocationHandler implements InvocationHandler {
                 .serializeType(SerializerFactory.getSerializer(RpcBootStrap.SERIALIZE_TYPE).getCode())
                 .timeStamp(System.currentTimeMillis())
                 .requestPayload(requestPayload).build();
+
+        RpcBootStrap.REQUEST_THREAD_LOCAL.set(rpcRequest);
+
+        // 2. 使用负载均衡策略获取主机
+        InetSocketAddress inetSocketAddress = new ConsistentHashBalancer()
+                .selectServiceAddress(interfaceConsumer.getName());
+        log.debug("服务调用方发现了可用主机{}", inetSocketAddress);
+
+        // 3. 获取一个可用通道
+        Channel channel = getAvailableChannel(inetSocketAddress);
+        log.debug("服务调用方获取一个可用通道{}", channel);
+
 
         // 4. 写出报文
         // 将objectFuture暴露出去 方便让接收的pipeline处理对应的消息 并保存到completableFuture中
@@ -90,6 +93,10 @@ public class ConsumerInvocationHandler implements InvocationHandler {
                         objectFuture.completeExceptionally(promise.cause());
                     }
                 });
+
+        // 清理threadLocal
+        RpcBootStrap.REQUEST_THREAD_LOCAL.remove();
+
 
         // 5. 获得响应
         // 返回结果是 服务提供者返回的最后结果 也就是从接收的pipeline的completableFuture中获取结果

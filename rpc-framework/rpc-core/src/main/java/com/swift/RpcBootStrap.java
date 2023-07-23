@@ -6,6 +6,7 @@ import com.swift.channelhandler.handler.RpcResponseEncoder;
 import com.swift.discovery.RegisterConfig;
 import com.swift.discovery.Registry;
 import com.swift.loadbalancer.LoadBalancer;
+import com.swift.transport.message.RpcRequest;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -30,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class RpcBootStrap {
-    public static final int PORT = 8090;
+    public static final int PORT = 8092;
     
     /**
      * RpcBootStrap是个单例  只希望每个应用程序只有一个实例
@@ -53,6 +54,8 @@ public class RpcBootStrap {
     public static final IdGenerator ID_GENERATOR = new IdGenerator(1, 2);
 
     public static LoadBalancer LOAD_BALANCER;
+
+    public static ThreadLocal<RpcRequest> REQUEST_THREAD_LOCAL = new ThreadLocal<>();
 
     private RpcBootStrap() {
         // 私有化构造器  做一些初始化的事情
