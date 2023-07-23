@@ -35,6 +35,7 @@ public class RpcBootStrap {
      */
     private static final RpcBootStrap rpcBootStrap = new RpcBootStrap();
     public static String SERIALIZE_TYPE = "jdk";
+    public static String COMPRESS_TYPE = "gzip";
     private String appName = "default";
     private RegisterConfig registerConfig;
     private ProtocolConfig protocolConfig;
@@ -187,6 +188,17 @@ public class RpcBootStrap {
      */
     public RpcBootStrap serialize(String serializeName) {
         SERIALIZE_TYPE = serializeName;
+        return this;
+    }
+
+    /**
+     * 配置压缩器
+     *
+     * @param CompressName
+     * @return
+     */
+    public RpcBootStrap compress(String CompressName) {
+        COMPRESS_TYPE = CompressName;
         return this;
     }
 }

@@ -1,5 +1,7 @@
 package com.swift.channelhandler.handler;
 
+import com.swift.compress.Compressor;
+import com.swift.compress.CompressorFactory;
 import com.swift.serialize.Serializer;
 import com.swift.serialize.SerializerFactory;
 import com.swift.transport.message.MessageFormatConstant;
@@ -52,11 +54,14 @@ public class RpcResponseEncoder extends MessageToByteEncoder<RpcResponse> {
         byteBuf.writeLong(rpcResponse.getRequestId());
 
         // 写入请求体（requestPayload）
+        // 序列化
         Serializer serializer = SerializerFactory.getSerializer(rpcResponse.getSerializeType()).getSerializer();
         byte[] body = serializer.serialize(rpcResponse.getBody());
 
-        // TODO 压缩 
-        
+        // 进行报文压缩
+        Compressor compressor = CompressorFactory.getCompressor(rpcResponse.getCompressType()).getCompressor();
+        body = compressor.compress(body);
+
         if (body != null) {
             byteBuf.writeBytes(body);
         }

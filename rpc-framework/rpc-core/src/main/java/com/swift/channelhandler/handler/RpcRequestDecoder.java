@@ -1,5 +1,7 @@
 package com.swift.channelhandler.handler;
 
+import com.swift.compress.Compressor;
+import com.swift.compress.CompressorFactory;
 import com.swift.enumeration.RequestType;
 import com.swift.serialize.Serializer;
 import com.swift.serialize.SerializerFactory;
@@ -95,8 +97,9 @@ public class RpcRequestDecoder extends LengthFieldBasedFrameDecoder {
         byte[] payload = new byte[payloadLength];
         byteBuf.readBytes(payload);
 
-        // 有了字节数组之后就可以解压缩，反序列化
-        // todo 解压缩
+        // 解压缩
+        Compressor compressor = CompressorFactory.getCompressor(compressType).getCompressor();
+        payload = compressor.decompress(payload);
 
         // 反序列化 
         Serializer serializer = SerializerFactory.getSerializer(serializeType).getSerializer();

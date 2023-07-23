@@ -1,6 +1,7 @@
 package com.swift.proxy.handlerrpc;
 
 import com.swift.RpcBootStrap;
+import com.swift.compress.CompressorFactory;
 import com.swift.discovery.NettyBootstrapInitializer;
 import com.swift.discovery.Registry;
 import com.swift.enumeration.RequestType;
@@ -69,7 +70,7 @@ public class ConsumerInvocationHandler implements InvocationHandler {
         RpcRequest rpcRequest = RpcRequest.builder()
                 .requestId(RpcBootStrap.ID_GENERATOR.getId())
                 .requestType(RequestType.REQUEST.getId())
-                .compressType((byte) 1)
+                .compressType(CompressorFactory.getCompressor(RpcBootStrap.COMPRESS_TYPE).getCode())
                 .serializeType(SerializerFactory.getSerializer(RpcBootStrap.SERIALIZE_TYPE).getCode())
                 .timeStamp(System.currentTimeMillis())
                 .requestPayload(requestPayload).build();

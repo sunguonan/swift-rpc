@@ -26,7 +26,8 @@ public class ConsumerApplication {
                 .application("Consumer")
                 // 设置注册中心
                 .registry(new RegisterConfig("zookeeper://127.0.0.1:2181"))
-                .serialize("json")
+                .serialize("jdk")
+                .compress("gzip")
                 // 一但执行这个操作 就会将注册中心的内容传递给reference 
                 // reference就可以通过代理做一些事情
                 .reference(reference);
