@@ -32,9 +32,11 @@ public class ConsumerApplication {
                 // reference就可以通过代理做一些事情
                 .reference(reference);
 
-        // 调用get方法获取代理对象
         HelloRpc helloRpc = reference.get();
-        String rpc = helloRpc.sayHi("hello rpc");
-        log.debug("rpc--->{}", rpc);
+        // 调用get方法获取代理对象
+        for (int i = 0; i < 10; i++) {
+            String rpc = helloRpc.sayHi("hello rpc");
+            log.debug("rpc--->{}", rpc);
+        }
     }
 }

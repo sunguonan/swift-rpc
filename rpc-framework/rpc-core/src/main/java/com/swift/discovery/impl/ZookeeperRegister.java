@@ -1,6 +1,7 @@
 package com.swift.discovery.impl;
 
 import com.swift.Constant;
+import com.swift.RpcBootStrap;
 import com.swift.ServiceConfig;
 import com.swift.discovery.AbstractRegister;
 import com.swift.exception.DiscoveryException;
@@ -46,7 +47,7 @@ public class ZookeeperRegister extends AbstractRegister {
         // 服务提供的端口一般由自己设置
         // ip一般是局域网地址  不是127.0.0.1
         // TODO port  写死 8080  后面改
-        String localNode = parentNode + "/" + NetUtils.getIp() + ":" + 8088;
+        String localNode = parentNode + "/" + NetUtils.getIp() + ":" + RpcBootStrap.PORT;
         ZookeeperNode zookeeperLocalNode = new ZookeeperNode(localNode, null);
         // 发布结点  这个节点是一个临时节点
         if (!ZookeeperUtil.exists(zooKeeper, localNode, null)) {
@@ -55,7 +56,7 @@ public class ZookeeperRegister extends AbstractRegister {
     }
 
     @Override
-    public InetSocketAddress lookup(String serviceName) {
+    public List<InetSocketAddress> lookup(String serviceName) {
         // 1、找到服务对应的节点
         String serviceNode = Constant.BASE_PROVIDER_PATH + "/" + serviceName;
         // 2. 从zookeeper中获取子节点
@@ -71,6 +72,6 @@ public class ZookeeperRegister extends AbstractRegister {
             throw new DiscoveryException("未发现任何可用的服务主机.");
         }
 
-        return inetSocketAddresses.get(0);
+        return inetSocketAddresses;
     }
 }

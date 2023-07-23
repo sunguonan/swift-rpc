@@ -6,6 +6,7 @@ import com.swift.discovery.NettyBootstrapInitializer;
 import com.swift.discovery.Registry;
 import com.swift.enumeration.RequestType;
 import com.swift.exception.NetworkException;
+import com.swift.loadbalancer.impl.RoundRobinLoadBalancer;
 import com.swift.serialize.SerializerFactory;
 import com.swift.transport.message.RequestPayload;
 import com.swift.transport.message.RpcRequest;
@@ -49,10 +50,9 @@ public class ConsumerInvocationHandler implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {
 
-        // 1. 从注册中心找到一个可用的服务
-        // TODO question 我们每次调用相关方法的时候都需要去注册中心拉取服务列表吗  本地缓存+watch
-        // TODO          我们如何选择一个可用的服务 而不是只获取第一个  轮询 随机 。。。 负载均衡策略
-        InetSocketAddress inetSocketAddress = registry.lookup(interfaceConsumer.getName());
+        // 1. 使用负载均衡策略获取主机
+        InetSocketAddress inetSocketAddress = new RoundRobinLoadBalancer()
+                .selectServiceAddress(interfaceConsumer.getName());
         log.debug("服务调用方发现了可用主机{}", inetSocketAddress);
 
         // 2. 获取一个可用通道
@@ -94,7 +94,7 @@ public class ConsumerInvocationHandler implements InvocationHandler {
         // 5. 获得响应
         // 返回结果是 服务提供者返回的最后结果 也就是从接收的pipeline的completableFuture中获取结果
         try {
-            return objectFuture.get(10, TimeUnit.SECONDS);
+            return objectFuture.get(100000000, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             log.debug("获取响应结果失败", e);
             throw new RuntimeException(e);

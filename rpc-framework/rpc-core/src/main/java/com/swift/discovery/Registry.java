@@ -3,6 +3,7 @@ package com.swift.discovery;
 import com.swift.ServiceConfig;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
 /**
  * 注册中心
@@ -19,11 +20,11 @@ public interface Registry {
     void register(ServiceConfig<?> serviceConfig);
 
     /**
-     * 从数据中心 拉取一个可用的服务
+     * 从数据中心 拉取服务列表
      *
      * @param name 服务的名称
      * @return 服务的地址
      */
-    InetSocketAddress lookup(String name);
+    List<InetSocketAddress> lookup(String name);
 
 }

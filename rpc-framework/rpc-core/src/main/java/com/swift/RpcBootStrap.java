@@ -5,6 +5,7 @@ import com.swift.channelhandler.handler.RpcRequestDecoder;
 import com.swift.channelhandler.handler.RpcResponseEncoder;
 import com.swift.discovery.RegisterConfig;
 import com.swift.discovery.Registry;
+import com.swift.loadbalancer.LoadBalancer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -29,6 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class RpcBootStrap {
+    public static final int PORT = 8090;
+    
     /**
      * RpcBootStrap是个单例  只希望每个应用程序只有一个实例
      * 单例 --> 懒汉式  私有化构造器  别人不能new
@@ -48,6 +51,8 @@ public class RpcBootStrap {
     // 注册中心
     private Registry registry;
     public static final IdGenerator ID_GENERATOR = new IdGenerator(1, 2);
+
+    public static LoadBalancer LOAD_BALANCER;
 
     private RpcBootStrap() {
         // 私有化构造器  做一些初始化的事情
@@ -153,7 +158,7 @@ public class RpcBootStrap {
                                     .addLast(new RpcResponseEncoder());
                         }
                     });
-            ChannelFuture channelFuture = serverBootstrap.bind(8088).sync();
+            ChannelFuture channelFuture = serverBootstrap.bind(RpcBootStrap.PORT).sync();
             channelFuture.channel().closeFuture().sync();
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -200,5 +205,9 @@ public class RpcBootStrap {
     public RpcBootStrap compress(String CompressName) {
         COMPRESS_TYPE = CompressName;
         return this;
+    }
+
+    public Registry getRegistry() {
+        return registry;
     }
 }
