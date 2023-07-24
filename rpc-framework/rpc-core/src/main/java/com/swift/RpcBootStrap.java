@@ -3,6 +3,7 @@ package com.swift;
 import com.swift.channelhandler.handler.MethodCallHandler;
 import com.swift.channelhandler.handler.RpcRequestDecoder;
 import com.swift.channelhandler.handler.RpcResponseEncoder;
+import com.swift.core.HeartbeatDetector;
 import com.swift.discovery.RegisterConfig;
 import com.swift.discovery.Registry;
 import com.swift.loadbalancer.LoadBalancer;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,7 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class RpcBootStrap {
     public static final int PORT = 8092;
-    
+    public static final TreeMap<Long, Channel> ANSWER_TIME_CHANNEL_CACHE = new TreeMap<>();
+
     /**
      * RpcBootStrap是个单例  只希望每个应用程序只有一个实例
      * 单例 --> 懒汉式  私有化构造器  别人不能new
@@ -183,6 +186,8 @@ public class RpcBootStrap {
      * @return RpcBootStrap 实例
      */
     public RpcBootStrap reference(ReferenceConfig<?> reference) {
+        // 开启对服务的心跳检测
+        HeartbeatDetector.detectHeartbeat(reference.getInterface().getName());
         // 获取注册中心
         reference.setRegistry(registry);
         return this;

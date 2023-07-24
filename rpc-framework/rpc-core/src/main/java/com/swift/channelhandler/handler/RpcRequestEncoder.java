@@ -43,15 +43,19 @@ public class RpcRequestEncoder extends MessageToByteEncoder<RpcRequest> {
         byteBuf.writeByte(rpcRequest.getCompressType());
         // 8字节的请求id
         byteBuf.writeLong(rpcRequest.getRequestId());
+        byteBuf.writeLong(rpcRequest.getTimeStamp());
 
-        // 写入请求体（requestPayload）
-        // 进行序列化
-        Serializer serializer = SerializerFactory.getSerializer(rpcRequest.getSerializeType()).getSerializer();
-        byte[] body = serializer.serialize(rpcRequest.getRequestPayload());
+        byte[] body = null;
+        if (rpcRequest.getRequestPayload() != null) {
+            // 写入请求体（requestPayload）
+            // 进行序列化
+            Serializer serializer = SerializerFactory.getSerializer(rpcRequest.getSerializeType()).getSerializer();
+            body = serializer.serialize(rpcRequest.getRequestPayload());
 
-        // 进行报文压缩
-        Compressor compressor = CompressorFactory.getCompressor(rpcRequest.getCompressType()).getCompressor();
-        body = compressor.compress(body);
+            // 进行报文压缩
+            Compressor compressor = CompressorFactory.getCompressor(rpcRequest.getCompressType()).getCompressor();
+            body = compressor.compress(body);
+        }
 
         if (body != null) {
             byteBuf.writeBytes(body);

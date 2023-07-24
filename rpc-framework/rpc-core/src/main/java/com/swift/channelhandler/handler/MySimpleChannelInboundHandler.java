@@ -28,7 +28,7 @@ public class MySimpleChannelInboundHandler extends SimpleChannelInboundHandler<R
         // 服务提供方返回的结果
         Object result = rpcResponse.getBody();
         // 接收到消息 存放到completableFuture中
-        CompletableFuture<Object> completableFuture = RpcBootStrap.PENDING_REQUEST.get(1L);
+        CompletableFuture<Object> completableFuture = RpcBootStrap.PENDING_REQUEST.get(rpcResponse.getRequestId());
         completableFuture.complete(result);
         log.debug("以寻找到编号为【{}】的completableFuture，处理响应结果。", rpcResponse.getRequestId());
     }

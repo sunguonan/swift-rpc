@@ -36,6 +36,7 @@ public class RpcResponseDecoder extends LengthFieldBasedFrameDecoder {
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
+        // Thread.sleep(new Random().nextInt(50));
         Object decode = super.decode(ctx, in);
         if (decode instanceof ByteBuf) {
             ByteBuf byteBuf = (ByteBuf) decode;
@@ -78,6 +79,8 @@ public class RpcResponseDecoder extends LengthFieldBasedFrameDecoder {
 
         // 8、请求id
         long requestId = byteBuf.readLong();
+        // 9、时间戳
+        long timeStamp = byteBuf.readLong();
 
         // 我们需要封装
         RpcResponse rpcResponse = new RpcResponse();
@@ -85,24 +88,23 @@ public class RpcResponseDecoder extends LengthFieldBasedFrameDecoder {
         rpcResponse.setCompressType(compressType);
         rpcResponse.setSerializeType(serializeType);
         rpcResponse.setRequestId(requestId);
+        rpcResponse.setTimeStamp(timeStamp);
 
-        // 心跳请求没有负载，此处可以判断并直接返回
-        // if (requestType == RequestType.HEART_BEAT.getId()) {
-        //     return rpcResponse;
-        // }
 
         int bodyLength = fullLength - headLength;
         byte[] payload = new byte[bodyLength];
         byteBuf.readBytes(payload);
 
-        // 解压缩
-        Compressor compressor = CompressorFactory.getCompressor(compressType).getCompressor();
-        payload = compressor.decompress(payload);
+        if (payload.length != 0) {
+            // 解压缩
+            Compressor compressor = CompressorFactory.getCompressor(compressType).getCompressor();
+            payload = compressor.decompress(payload);
 
-        // 反序列化
-        Serializer serializer = SerializerFactory.getSerializer(serializeType).getSerializer();
-        Object body = serializer.deserialize(payload, Object.class);
-        rpcResponse.setBody(body);
+            // 反序列化
+            Serializer serializer = SerializerFactory.getSerializer(serializeType).getSerializer();
+            Object body = serializer.deserialize(payload, Object.class);
+            rpcResponse.setBody(body);
+        }
 
         log.debug("响应【{}】已经在调用端完成解码工作。", rpcResponse.getRequestId());
 

@@ -52,21 +52,28 @@ public class RpcResponseEncoder extends MessageToByteEncoder<RpcResponse> {
         byteBuf.writeByte(rpcResponse.getCompressType());
         // 8字节的请求id
         byteBuf.writeLong(rpcResponse.getRequestId());
+        byteBuf.writeLong(rpcResponse.getTimeStamp());
 
-        // 写入请求体（requestPayload）
-        // 序列化
-        Serializer serializer = SerializerFactory.getSerializer(rpcResponse.getSerializeType()).getSerializer();
-        byte[] body = serializer.serialize(rpcResponse.getBody());
+        byte[] body = null;
+        if (rpcResponse.getBody() != null) {
 
-        // 进行报文压缩
-        Compressor compressor = CompressorFactory.getCompressor(rpcResponse.getCompressType()).getCompressor();
-        body = compressor.compress(body);
+            // 写入请求体（requestPayload）
+            // 序列化
+            Serializer serializer = SerializerFactory.getSerializer(rpcResponse.getSerializeType()).getSerializer();
+            body = serializer.serialize(rpcResponse.getBody());
+
+            // 进行报文压缩
+            Compressor compressor = CompressorFactory.getCompressor(rpcResponse.getCompressType()).getCompressor();
+            body = compressor.compress(body);
+
+        }
 
         if (body != null) {
             byteBuf.writeBytes(body);
         }
         // 获取body长度
         int bodyLength = body == null ? 0 : body.length;
+
         // 重新处理报文的总长度
         // 先保存当前的写指针的位置
         int writerIndex = byteBuf.writerIndex();

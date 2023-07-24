@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -63,9 +64,10 @@ public class ConsumerInvocationHandler implements InvocationHandler {
                 .requestType(RequestType.REQUEST.getId())
                 .compressType(CompressorFactory.getCompressor(RpcBootStrap.COMPRESS_TYPE).getCode())
                 .serializeType(SerializerFactory.getSerializer(RpcBootStrap.SERIALIZE_TYPE).getCode())
-                .timeStamp(System.currentTimeMillis())
+                .timeStamp(new Date().getTime())
                 .requestPayload(requestPayload).build();
 
+        // 创建本地线程 threadLocal
         RpcBootStrap.REQUEST_THREAD_LOCAL.set(rpcRequest);
 
         // 2. 使用负载均衡策略获取主机
@@ -82,7 +84,7 @@ public class ConsumerInvocationHandler implements InvocationHandler {
         // 将objectFuture暴露出去 方便让接收的pipeline处理对应的消息 并保存到completableFuture中
         CompletableFuture<Object> objectFuture = new CompletableFuture<>();
         // 挂起objectFuture 暴露CompletableFuture
-        RpcBootStrap.PENDING_REQUEST.put(1L, objectFuture);
+        RpcBootStrap.PENDING_REQUEST.put(rpcRequest.getRequestId(), objectFuture);
         // 写出数据 这个请求的实例会进入pipeline 会执行出栈等一系列操作 第一个进入处理器的一定是将对象转化为二进制数据
         channel.writeAndFlush(rpcRequest)
                 .addListener((ChannelFutureListener) promise -> {
@@ -101,7 +103,7 @@ public class ConsumerInvocationHandler implements InvocationHandler {
         // 5. 获得响应
         // 返回结果是 服务提供者返回的最后结果 也就是从接收的pipeline的completableFuture中获取结果
         try {
-            return objectFuture.get(100000000, TimeUnit.SECONDS);
+            return objectFuture.get(10, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             log.debug("获取响应结果失败", e);
             throw new RuntimeException(e);

@@ -2,6 +2,7 @@ package com.swift.channelhandler.handler;
 
 import com.swift.RpcBootStrap;
 import com.swift.ServiceConfig;
+import com.swift.enumeration.RequestType;
 import com.swift.enumeration.RespCode;
 import com.swift.transport.message.RequestPayload;
 import com.swift.transport.message.RpcRequest;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Date;
 
 /**
  * 方法调用处理器
@@ -25,14 +27,18 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<RpcRequest> {
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, RpcRequest rpcRequest) throws Exception {
         // 1. 获取负载内容
         RequestPayload requestPayload = rpcRequest.getRequestPayload();
-        // 2. 根据负载内容进行调用
-        Object result = callTargetMethod(requestPayload);
+        Object result = null;
+        if (!(rpcRequest.getRequestType() == RequestType.HEART_BEAT.getId())) {
+            // 2. 根据负载内容进行调用
+            result = callTargetMethod(requestPayload);
+        }
         // 3. 封装响应
         RpcResponse rpcResponse = new RpcResponse();
         rpcResponse.setCode(RespCode.SUCCESS.getCode());
         rpcResponse.setRequestId(rpcRequest.getRequestId());
         rpcResponse.setCompressType(rpcRequest.getCompressType());
         rpcResponse.setSerializeType(rpcRequest.getSerializeType());
+        rpcResponse.setTimeStamp(new Date().getTime());
         rpcResponse.setBody(result);
         // 4. 写出响应
         channelHandlerContext.channel().writeAndFlush(rpcResponse);
