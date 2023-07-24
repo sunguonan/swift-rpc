@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class RpcBootStrap {
-    public static final int PORT = 8092;
+    public static final int PORT = 8090;
     public static final TreeMap<Long, Channel> ANSWER_TIME_CHANNEL_CACHE = new TreeMap<>();
 
     /**

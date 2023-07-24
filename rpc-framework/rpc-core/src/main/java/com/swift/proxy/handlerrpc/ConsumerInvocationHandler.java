@@ -6,7 +6,7 @@ import com.swift.discovery.NettyBootstrapInitializer;
 import com.swift.discovery.Registry;
 import com.swift.enumeration.RequestType;
 import com.swift.exception.NetworkException;
-import com.swift.loadbalancer.impl.ConsistentHashBalancer;
+import com.swift.loadbalancer.impl.MinimumResponseTimeLoadBalancer;
 import com.swift.serialize.SerializerFactory;
 import com.swift.transport.message.RequestPayload;
 import com.swift.transport.message.RpcRequest;
@@ -71,7 +71,7 @@ public class ConsumerInvocationHandler implements InvocationHandler {
         RpcBootStrap.REQUEST_THREAD_LOCAL.set(rpcRequest);
 
         // 2. 使用负载均衡策略获取主机
-        InetSocketAddress inetSocketAddress = new ConsistentHashBalancer()
+        InetSocketAddress inetSocketAddress = new MinimumResponseTimeLoadBalancer()
                 .selectServiceAddress(interfaceConsumer.getName());
         log.debug("服务调用方发现了可用主机{}", inetSocketAddress);
 
