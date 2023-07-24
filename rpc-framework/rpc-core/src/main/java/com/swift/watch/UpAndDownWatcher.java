@@ -4,6 +4,7 @@ package com.swift.watch;
 import com.swift.RpcBootStrap;
 import com.swift.discovery.NettyBootstrapInitializer;
 import com.swift.discovery.Registry;
+import com.swift.loadbalancer.LoadBalancer;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.zookeeper.WatchedEvent;
@@ -59,9 +60,9 @@ public class UpAndDownWatcher implements Watcher {
                 }
             }
 
-            // // 获得负载均衡器，进行重新的loadBalance
-            // LoadBalancer loadBalancer = RpcBootStrap.getLoadBalancer();
-            // loadBalancer.reLoadBalance(serviceName, addresses);
+            // 获得负载均衡器，进行重新的loadBalance
+            LoadBalancer loadBalancer = RpcBootStrap.getLoadBalancer();
+            loadBalancer.reLoadBalance(serviceName, addresses);
         }
     }
 

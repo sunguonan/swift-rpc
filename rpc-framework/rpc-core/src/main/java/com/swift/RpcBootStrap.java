@@ -7,6 +7,7 @@ import com.swift.core.HeartbeatDetector;
 import com.swift.discovery.RegisterConfig;
 import com.swift.discovery.Registry;
 import com.swift.loadbalancer.LoadBalancer;
+import com.swift.loadbalancer.impl.RoundRobinLoadBalancer;
 import com.swift.transport.message.RpcRequest;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -93,6 +94,7 @@ public class RpcBootStrap {
     public RpcBootStrap registry(RegisterConfig registerConfig) {
         // 使用registerConfig获取一个配置中心  --- 简单工厂设计模式
         this.registry = registerConfig.getRegister();
+        LOAD_BALANCER = new RoundRobinLoadBalancer();
         return this;
     }
 
