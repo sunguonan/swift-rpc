@@ -41,6 +41,5 @@ public class MinimumResponseTimeLoadBalancer extends AbstractLoadBalancer {
             Channel channel = (Channel) RpcBootStrap.CHANNEL_CACHE.values().toArray()[0];
             return (InetSocketAddress) channel.remoteAddress();
         }
-
     }
 }

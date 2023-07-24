@@ -8,6 +8,7 @@ import com.swift.exception.DiscoveryException;
 import com.swift.util.NetUtils;
 import com.swift.util.zookeeper.ZookeeperNode;
 import com.swift.util.zookeeper.ZookeeperUtil;
+import com.swift.watch.UpAndDownWatcher;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooKeeper;
 
@@ -60,7 +61,7 @@ public class ZookeeperRegister extends AbstractRegister {
         // 1、找到服务对应的节点
         String serviceNode = Constant.BASE_PROVIDER_PATH + "/" + serviceName;
         // 2. 从zookeeper中获取子节点
-        List<String> children = ZookeeperUtil.getChildren(zooKeeper, serviceNode, null);
+        List<String> children = ZookeeperUtil.getChildren(zooKeeper, serviceNode, new UpAndDownWatcher());
         List<InetSocketAddress> inetSocketAddresses = children.stream().map(ipString -> {
             String[] ipAndPort = ipString.split(":");
             String ip = ipAndPort[0];
