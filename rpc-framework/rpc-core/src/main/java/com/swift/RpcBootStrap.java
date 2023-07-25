@@ -1,5 +1,6 @@
 package com.swift;
 
+import com.swift.annotation.RpcApi;
 import com.swift.channelhandler.handler.MethodCallHandler;
 import com.swift.channelhandler.handler.RpcRequestDecoder;
 import com.swift.channelhandler.handler.RpcResponseEncoder;
@@ -19,12 +20,17 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * 核心的引导程序
@@ -216,6 +222,114 @@ public class RpcBootStrap {
         COMPRESS_TYPE = CompressName;
         return this;
     }
+
+    /**
+     * 扫描包，进行批量注册
+     *
+     * @param packageName 包名
+     * @return this本身
+     */
+    public RpcBootStrap scan(String packageName) {
+        // 1、需要通过packageName获取其下的所有的类的权限定名称
+        List<String> classNames = getAllClassNames(packageName);
+
+        // 2、通过反射获取他的接口，构建具体实现
+        List<Class<?>> classes = classNames.stream()
+                .map(className -> {
+                    try {
+                        return Class.forName(className);
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                    // 检查类是否被标记了RpcApi注解。
+                }).filter(clazz -> clazz.getAnnotation(RpcApi.class) != null)
+                .collect(Collectors.toList());
+
+        for (Class<?> clazz : classes) {
+            // 获取他的接口
+            Class<?>[] interfaces = clazz.getInterfaces();
+            Object instance = null;
+            try {
+                instance = clazz.getConstructor().newInstance();
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                     NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+
+
+            for (Class<?> anInterface : interfaces) {
+                ServiceConfig<?> serviceConfig = new ServiceConfig<>();
+                serviceConfig.setInterface(anInterface);
+                serviceConfig.setRef(instance);
+                if (log.isDebugEnabled()) {
+                    log.debug("---->已经通过包扫描，将服务【{}】发布.", anInterface);
+                }
+                // 3、发布
+                publish(serviceConfig);
+            }
+
+        }
+        return this;
+    }
+
+    private List<String> getAllClassNames(String packageName) {
+        // 1、通过packageName获得绝对路径
+        // com.swift.xxx.yyy -> E://xxx/xww/sss/com/swift/xxx/yyy
+        String basePath = packageName.replaceAll("\\.", "/");
+        URL url = ClassLoader.getSystemClassLoader().getResource(basePath);
+        if (url == null) {
+            throw new RuntimeException("包扫描时，发现路径不存在.");
+        }
+        // 获取绝对路径
+        String absolutePath = url.getPath();
+
+        // 递归获取文件 ---> 获取全部的class文件
+        List<String> classNames = new ArrayList<>();
+        classNames = recursionFile(absolutePath, classNames, basePath);
+        return classNames;
+    }
+
+    private List<String> recursionFile(String absolutePath, List<String> classNames, String basePath) {
+        // 获取文件
+        File file = new File(absolutePath);
+        // 判断文件是否是文件夹
+        if (file.isDirectory()) {
+            // 找到文件夹的所有的文件   （包含com/swift/下的 文件夹和class文件）
+            File[] children = file.listFiles(pathname -> pathname.isDirectory() || pathname.getPath().contains(".class"));
+            if (children == null || children.length == 0) {
+                return classNames;
+            }
+            // 遍历根节点下的子结点
+            for (File child : children) {
+                if (child.isDirectory()) {
+                    // 递归调用
+                    recursionFile(child.getAbsolutePath(), classNames, basePath);
+                } else {
+                    // 文件 --> 类的权限定名称
+                    String className = getClassNameByAbsolutePath(child.getAbsolutePath(), basePath);
+                    classNames.add(className);
+                }
+            }
+
+        } else {
+            // 文件 --> 类的权限定名称
+            String className = getClassNameByAbsolutePath(absolutePath, basePath);
+            classNames.add(className);
+        }
+        return classNames;
+    }
+
+    private String getClassNameByAbsolutePath(String absolutePath, String basePath) {
+        // D:\workBench\sourceCode\swift-rpc\rpc-framework\rpc-core\target\classes\com\swift\channelhandler\ConsumerChannelInitializer.class
+        // com\swift\channelhandler\ConsumerChannelInitializer.class --> com.swift.channelhandler.ConsumerChannelInitializer
+        String fileName = absolutePath
+                .substring(absolutePath.indexOf(basePath.replaceAll("/", "\\\\")))
+                .replaceAll("\\\\", ".");
+
+        fileName = fileName.substring(0, fileName.indexOf(".class"));
+        return fileName;
+    }
+
 
     public Registry getRegistry() {
         return registry;

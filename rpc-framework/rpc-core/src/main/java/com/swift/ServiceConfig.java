@@ -16,8 +16,8 @@ public class ServiceConfig<T> {
     public ServiceConfig() {
     }
 
-    public ServiceConfig(Class<T> interfaceProvider, Object implementsProvider) {
-        this.interfaceProvider = interfaceProvider;
+    public ServiceConfig(Class<?> interfaceProvider, Object implementsProvider) {
+        this.interfaceProvider = (Class<T>) interfaceProvider;
         this.implementsProvider = implementsProvider;
     }
 
@@ -25,8 +25,8 @@ public class ServiceConfig<T> {
         return interfaceProvider;
     }
 
-    public void setInterface(Class<T> interfaceProvider) {
-        this.interfaceProvider = interfaceProvider;
+    public void setInterface(Class<?> interfaceProvider) {
+        this.interfaceProvider = (Class<T>) interfaceProvider;
     }
 
     public Object getRef() {

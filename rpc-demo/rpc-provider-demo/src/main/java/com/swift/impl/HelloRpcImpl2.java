@@ -1,6 +1,6 @@
 package com.swift.impl;
 
-import com.swift.HelloRpc;
+import com.swift.HelloRpc2;
 import com.swift.annotation.RpcApi;
 
 
@@ -9,7 +9,7 @@ import com.swift.annotation.RpcApi;
  * @version 1.0
  */
 @RpcApi
-public class HelloRpcImpl implements HelloRpc {
+public class HelloRpcImpl2 implements HelloRpc2 {
     @Override
     public String sayHi(String msg) {
         return "hi consumer" + msg;
