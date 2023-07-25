@@ -59,10 +59,10 @@ public class ConsumerInvocationHandler implements InvocationHandler {
                 .returnType(method.getReturnType()).build();
 
         RpcRequest rpcRequest = RpcRequest.builder()
-                .requestId(RpcBootStrap.ID_GENERATOR.getId())
+                .requestId(RpcBootStrap.getInstance().getConfiguration().getIdGenerator().getId())
                 .requestType(RequestType.REQUEST.getId())
-                .compressType(CompressorFactory.getCompressor(RpcBootStrap.COMPRESS_TYPE).getCode())
-                .serializeType(SerializerFactory.getSerializer(RpcBootStrap.SERIALIZE_TYPE).getCode())
+                .compressType(CompressorFactory.getCompressor(RpcBootStrap.getInstance().getConfiguration().getCompressType()).getCode())
+                .serializeType(SerializerFactory.getSerializer(RpcBootStrap.getInstance().getConfiguration().getSerializeType()).getCode())
                 .timeStamp(new Date().getTime())
                 .requestPayload(requestPayload).build();
 
@@ -70,7 +70,8 @@ public class ConsumerInvocationHandler implements InvocationHandler {
         RpcBootStrap.REQUEST_THREAD_LOCAL.set(rpcRequest);
 
         // 2. 使用负载均衡策略获取主机
-        InetSocketAddress inetSocketAddress = RpcBootStrap.LOAD_BALANCER.selectServiceAddress(interfaceConsumer.getName());
+        InetSocketAddress inetSocketAddress = RpcBootStrap.getInstance().getConfiguration().getLoadBalancer()
+                .selectServiceAddress(interfaceConsumer.getName());
         log.debug("服务调用方发现了可用主机{}", inetSocketAddress);
 
         // 3. 获取一个可用通道
@@ -118,7 +119,7 @@ public class ConsumerInvocationHandler implements InvocationHandler {
         // 1. 从全局缓存中拿到一个channel
         Channel channel = RpcBootStrap.CHANNEL_CACHE.get(inetSocketAddress);
 
-        // 2. 如果获取不到channel 就去建立连接 并缓存channel
+        // 2. 如果获取不到chanNel 就去建立连接 并缓存channel
         if (channel == null) {
             CompletableFuture<Channel> channelFuture = new CompletableFuture<>();
             // 使用异步策略

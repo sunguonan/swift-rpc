@@ -29,7 +29,9 @@ public class ProviderApplication {
                 // 序列化的协议  
                 .protocol(new ProtocolConfig("jdk"))
                 // 发布服务  ---> 将对应的接口和实现注册到服务中心
-                .publish(server)
+                // .publish(server)
+                // 扫包
+                .scan("com.swift")
                 // 启动服务
                 .start();
     }

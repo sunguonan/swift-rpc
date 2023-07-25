@@ -25,7 +25,7 @@ public abstract class AbstractLoadBalancer implements LoadBalancer {
         // 2. 如果没有，就需要为这个service创建一个selector
         if (selector == null) {
             // 找到可用服务列表
-            List<InetSocketAddress> serviceList = RpcBootStrap.getInstance().getRegistry().lookup(serviceName);
+            List<InetSocketAddress> serviceList = RpcBootStrap.getInstance().getConfiguration().getRegistryConfig().getRegister().lookup(serviceName);
 
             // 使用算法选择合适的结点
             selector = getSelector(serviceList);
