@@ -35,7 +35,7 @@ public class HeartbeatDetector {
      */
     public static void detectHeartbeat(String ServiceName) {
         // 1. 从注册中心拉取服务列表并建立连接
-        Registry registry = RpcBootStrap.getInstance().getRegistry();
+        Registry registry = RpcBootStrap.getInstance().getConfiguration().getRegistryConfig().getRegister();
         List<InetSocketAddress> addresses = registry.lookup(ServiceName);
 
         // 2. 将连接进行缓存
@@ -77,10 +77,10 @@ public class HeartbeatDetector {
                     long start = System.currentTimeMillis();
                     // 构建一个心跳请求
                     RpcRequest rpcRequest = RpcRequest.builder()
-                            .requestId(RpcBootStrap.ID_GENERATOR.getId())
+                            .requestId(RpcBootStrap.getInstance().getConfiguration().getIdGenerator().getId())
                             .requestType(RequestType.HEART_BEAT.getId())
-                            .compressType(CompressorFactory.getCompressor(RpcBootStrap.COMPRESS_TYPE).getCode())
-                            .serializeType(SerializerFactory.getSerializer(RpcBootStrap.SERIALIZE_TYPE).getCode())
+                            .compressType(CompressorFactory.getCompressor(RpcBootStrap.getInstance().getConfiguration().getCompressType()).getCode())
+                            .serializeType(SerializerFactory.getSerializer(RpcBootStrap.getInstance().getConfiguration().getSerializeType()).getCode())
                             .timeStamp(start).build();
 
                     // 4、写出报文

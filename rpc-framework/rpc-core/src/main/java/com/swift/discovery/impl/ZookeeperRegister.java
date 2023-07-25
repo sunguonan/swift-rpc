@@ -48,7 +48,7 @@ public class ZookeeperRegister extends AbstractRegister {
         // 服务提供的端口一般由自己设置
         // ip一般是局域网地址  不是127.0.0.1
         // TODO port  写死 8080  后面改
-        String localNode = parentNode + "/" + NetUtils.getIp() + ":" + RpcBootStrap.PORT;
+        String localNode = parentNode + "/" + NetUtils.getIp() + ":" + RpcBootStrap.getInstance().getConfiguration().getPort();
         ZookeeperNode zookeeperLocalNode = new ZookeeperNode(localNode, null);
         // 发布结点  这个节点是一个临时节点
         if (!ZookeeperUtil.exists(zooKeeper, localNode, null)) {
