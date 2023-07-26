@@ -49,11 +49,11 @@ public class RpcRequestEncoder extends MessageToByteEncoder<RpcRequest> {
         if (rpcRequest.getRequestPayload() != null) {
             // 写入请求体（requestPayload）
             // 进行序列化
-            Serializer serializer = SerializerFactory.getSerializer(rpcRequest.getSerializeType()).getSerializer();
+            Serializer serializer = SerializerFactory.getSerializer(rpcRequest.getSerializeType()).getImpl();
             body = serializer.serialize(rpcRequest.getRequestPayload());
 
             // 进行报文压缩
-            Compressor compressor = CompressorFactory.getCompressor(rpcRequest.getCompressType()).getCompressor();
+            Compressor compressor = CompressorFactory.getCompressor(rpcRequest.getCompressType()).getImpl();
             body = compressor.compress(body);
         }
 

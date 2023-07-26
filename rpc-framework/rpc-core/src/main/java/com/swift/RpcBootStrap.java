@@ -4,6 +4,7 @@ import com.swift.annotation.RpcApi;
 import com.swift.channelhandler.handler.MethodCallHandler;
 import com.swift.channelhandler.handler.RpcRequestDecoder;
 import com.swift.channelhandler.handler.RpcResponseEncoder;
+import com.swift.config.Configuration;
 import com.swift.core.HeartbeatDetector;
 import com.swift.discovery.RegisterConfig;
 import com.swift.loadbalancer.LoadBalancer;
@@ -100,17 +101,6 @@ public class RpcBootStrap {
      */
     public RpcBootStrap loadBalancer(LoadBalancer loadBalancer) {
         configuration.setLoadBalancer(loadBalancer);
-        return this;
-    }
-
-    /**
-     * 配置序列化协议
-     *
-     * @param protocolConfig 序列化协议  eg 默认jdk
-     * @return this 对象实例
-     */
-    public RpcBootStrap protocol(ProtocolConfig protocolConfig) {
-        configuration.setProtocolConfig(protocolConfig);
         return this;
     }
 

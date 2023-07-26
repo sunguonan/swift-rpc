@@ -59,11 +59,11 @@ public class RpcResponseEncoder extends MessageToByteEncoder<RpcResponse> {
 
             // 写入请求体（requestPayload）
             // 序列化
-            Serializer serializer = SerializerFactory.getSerializer(rpcResponse.getSerializeType()).getSerializer();
+            Serializer serializer = SerializerFactory.getSerializer(rpcResponse.getSerializeType()).getImpl();
             body = serializer.serialize(rpcResponse.getBody());
 
             // 进行报文压缩
-            Compressor compressor = CompressorFactory.getCompressor(rpcResponse.getCompressType()).getCompressor();
+            Compressor compressor = CompressorFactory.getCompressor(rpcResponse.getCompressType()).getImpl();
             body = compressor.compress(body);
 
         }

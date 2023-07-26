@@ -1,0 +1,3 @@
+1-ConsistentHash-com.swift.loadbalancer.impl.ConsistentHashBalancer
+2-MinimumResponseTime-com.swift.loadbalancer.impl.MinimumResponseTimeLoadBalancer
+3-RoundRobin-com.swift.loadbalancer.impl.RoundRobinLoadBalancer

@@ -26,8 +26,7 @@ public class ProviderApplication {
         RpcBootStrap.getInstance()
                 .application("Provider")
                 .registry(new RegisterConfig("zookeeper://127.0.0.1:2181"))
-                // 序列化的协议  
-                .protocol(new ProtocolConfig("jdk"))
+                .serialize("jdk")
                 // 发布服务  ---> 将对应的接口和实现注册到服务中心
                 // .publish(server)
                 // 扫包
