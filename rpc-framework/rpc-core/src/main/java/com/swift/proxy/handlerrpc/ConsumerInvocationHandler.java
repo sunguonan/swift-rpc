@@ -1,6 +1,7 @@
 package com.swift.proxy.handlerrpc;
 
 import com.swift.RpcBootStrap;
+import com.swift.annotation.TryTimes;
 import com.swift.compress.CompressorFactory;
 import com.swift.discovery.NettyBootstrapInitializer;
 import com.swift.discovery.Registry;
@@ -49,64 +50,95 @@ public class ConsumerInvocationHandler implements InvocationHandler {
      */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {
-
-        // 1. 封装报文 封装请求
-        RequestPayload requestPayload = RequestPayload.builder()
-                .interfaceName(interfaceConsumer.getName())
-                .methodName(method.getName())
-                .parametersType(method.getParameterTypes())
-                .parametersValue(args)
-                .returnType(method.getReturnType()).build();
-
-        RpcRequest rpcRequest = RpcRequest.builder()
-                .requestId(RpcBootStrap.getInstance().getConfiguration().getIdGenerator().getId())
-                .requestType(RequestType.REQUEST.getId())
-                .compressType(CompressorFactory.getCompressor(RpcBootStrap.getInstance().getConfiguration().getCompressType()).getCode())
-                .serializeType(SerializerFactory.getSerializer(RpcBootStrap.getInstance().getConfiguration().getSerializeType()).getCode())
-                .timeStamp(new Date().getTime())
-                .requestPayload(requestPayload).build();
-
-        // 创建本地线程 threadLocal
-        RpcBootStrap.REQUEST_THREAD_LOCAL.set(rpcRequest);
-
-        // 2. 使用负载均衡策略获取主机
-        InetSocketAddress inetSocketAddress = RpcBootStrap.getInstance().getConfiguration().getLoadBalancer()
-                .selectServiceAddress(interfaceConsumer.getName());
-        log.debug("服务调用方发现了可用主机{}", inetSocketAddress);
-
-        // 3. 获取一个可用通道
-        Channel channel = getAvailableChannel(inetSocketAddress);
-        log.debug("服务调用方获取一个可用通道{}", channel);
-
-
-        // 4. 写出报文
-        // 将objectFuture暴露出去 方便让接收的pipeline处理对应的消息 并保存到completableFuture中
-        CompletableFuture<Object> objectFuture = new CompletableFuture<>();
-        // 挂起objectFuture 暴露CompletableFuture
-        RpcBootStrap.PENDING_REQUEST.put(rpcRequest.getRequestId(), objectFuture);
-        // 写出数据 这个请求的实例会进入pipeline 会执行出栈等一系列操作 第一个进入处理器的一定是将对象转化为二进制数据
-        channel.writeAndFlush(rpcRequest)
-                .addListener((ChannelFutureListener) promise -> {
-                    // 异步任务不能完成的情况
-                    if (!promise.isSuccess()) {
-                        log.debug("异步任务完成失败", promise.cause());
-                        // 处理异常
-                        objectFuture.completeExceptionally(promise.cause());
-                    }
-                });
-
-        // 清理threadLocal
-        RpcBootStrap.REQUEST_THREAD_LOCAL.remove();
-
-
-        // 5. 获得响应
-        // 返回结果是 服务提供者返回的最后结果 也就是从接收的pipeline的completableFuture中获取结果
-        try {
-            return objectFuture.get(10, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            log.debug("获取响应结果失败", e);
-            throw new RuntimeException(e);
+        
+        // 从接口中判断是否需要重试
+        TryTimes tryTimesAnnotation = method.getAnnotation(TryTimes.class);
+        
+        // 设置不重试的值   0就代表不重试
+        int tryTimes = 0;
+        int intervalTime = 0;
+        
+        if (tryTimesAnnotation != null){
+            tryTimes = tryTimesAnnotation.tryTimes();
+            intervalTime = tryTimesAnnotation.intervalTime();
         }
+        
+        while (true) {
+            try {
+                // 1. 封装报文 封装请求
+                RequestPayload requestPayload = RequestPayload.builder()
+                        .interfaceName(interfaceConsumer.getName())
+                        .methodName(method.getName())
+                        .parametersType(method.getParameterTypes())
+                        .parametersValue(args)
+                        .returnType(method.getReturnType()).build();
+
+                RpcRequest rpcRequest = RpcRequest.builder()
+                        .requestId(RpcBootStrap.getInstance().getConfiguration().getIdGenerator().getId())
+                        .requestType(RequestType.REQUEST.getId())
+                        .compressType(CompressorFactory.getCompressor(RpcBootStrap.getInstance().getConfiguration().getCompressType()).getCode())
+                        .serializeType(SerializerFactory.getSerializer(RpcBootStrap.getInstance().getConfiguration().getSerializeType()).getCode())
+                        .timeStamp(new Date().getTime())
+                        .requestPayload(requestPayload).build();
+
+                // 创建本地线程 threadLocal
+                RpcBootStrap.REQUEST_THREAD_LOCAL.set(rpcRequest);
+
+                // 2. 使用负载均衡策略获取主机
+                InetSocketAddress inetSocketAddress = RpcBootStrap.getInstance().getConfiguration().getLoadBalancer()
+                        .selectServiceAddress(interfaceConsumer.getName());
+                log.debug("服务调用方发现了可用主机{}", inetSocketAddress);
+
+                // 3. 获取一个可用通道
+                Channel channel = getAvailableChannel(inetSocketAddress);
+                log.debug("服务调用方获取一个可用通道{}", channel);
+
+
+                // 4. 写出报文
+                // 将objectFuture暴露出去 方便让接收的pipeline处理对应的消息 并保存到completableFuture中
+                CompletableFuture<Object> objectFuture = new CompletableFuture<>();
+                // 挂起objectFuture 暴露CompletableFuture
+                RpcBootStrap.PENDING_REQUEST.put(rpcRequest.getRequestId(), objectFuture);
+                // 写出数据 这个请求的实例会进入pipeline 会执行出栈等一系列操作 第一个进入处理器的一定是将对象转化为二进制数据
+                channel.writeAndFlush(rpcRequest)
+                        .addListener((ChannelFutureListener) promise -> {
+                            // 异步任务不能完成的情况
+                            if (!promise.isSuccess()) {
+                                log.debug("异步任务完成失败", promise.cause());
+                                // 处理异常
+                                objectFuture.completeExceptionally(promise.cause());
+                            }
+                        });
+
+                // 清理threadLocal
+                RpcBootStrap.REQUEST_THREAD_LOCAL.remove();
+
+
+                // 5. 获得响应
+                // 返回结果是 服务提供者返回的最后结果 也就是从接收的pipeline的completableFuture中获取结果
+                try {
+                    return objectFuture.get(10, TimeUnit.SECONDS);
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    log.debug("获取响应结果失败", e);
+                    throw new RuntimeException(e);
+                }
+            } catch (Exception e) {
+                // 次数减一 并等待固定时间
+                tryTimes--;
+                try {
+                    Thread.sleep(intervalTime);
+                } catch (InterruptedException ex) {
+                    log.error("在进行重试时发生异常.", ex);
+                    throw new RuntimeException(ex);
+                }
+                if (tryTimes <= 0) {
+                    log.error("对方法【{}】进行远程调用时，重试{}次，依然不可调用", method.getName(), tryTimes, e);
+                    break;
+                }
+                log.error("在进行重试时发生异常.", e);
+            }
+        }
+        throw new RuntimeException("执行远程方法" + method.getName() + "调用失败。");
     }
 
     /**

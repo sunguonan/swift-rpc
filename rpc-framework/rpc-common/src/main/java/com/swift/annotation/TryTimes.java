@@ -9,7 +9,11 @@ import java.lang.annotation.Target;
  * @author sunGuoNan
  * @version 1.0
  */
-@Target(ElementType.TYPE)
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RpcApi {
+public @interface TryTimes {
+    
+    int tryTimes() default 3;
+    int intervalTime() default 2000;
+    
 }
