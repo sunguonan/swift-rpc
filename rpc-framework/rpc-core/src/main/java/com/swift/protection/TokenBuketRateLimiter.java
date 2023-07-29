@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
  * @version 1.0
  */
 @Slf4j
-public class TokenBuketRateLimiter {
+public class TokenBuketRateLimiter implements RateLimiter{
     
     // 代表令牌的数量，tokens>0 说明有令牌，能放行，放行就减一，tokens==0,无令牌  阻拦
     private int tokens;
@@ -37,6 +37,7 @@ public class TokenBuketRateLimiter {
      *
      * @return true 放行  false  拦截
      */
+    @Override
     public synchronized boolean allowRequest() {
         // 1、给令牌桶添加令牌
         // 计算从现在到上一次的时间间隔需要添加的令牌数

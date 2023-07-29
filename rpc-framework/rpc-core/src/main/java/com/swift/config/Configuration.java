@@ -8,10 +8,18 @@ import com.swift.compress.impl.GzipCompressor;
 import com.swift.discovery.RegisterConfig;
 import com.swift.loadbalancer.LoadBalancer;
 import com.swift.loadbalancer.impl.RoundRobinLoadBalancer;
+import com.swift.protection.CircuitBreaker;
+import com.swift.protection.RateLimiter;
+import com.swift.protection.TokenBuketRateLimiter;
 import com.swift.serialize.Serializer;
 import com.swift.serialize.impl.JdkSerializer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 全局的配置类，代码配置-->xml配置-->默认项
@@ -36,6 +44,11 @@ public class Configuration {
     private String compressType = "gzip";
     // 配置信息-->负载均衡策略
     private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
+
+    // 为每一个ip配置一个限流器
+    private final Map<SocketAddress, RateLimiter> everyIpRateLimiter = new ConcurrentHashMap<>(16);
+    // 为每一个ip配置一个断路器，熔断
+    private final Map<SocketAddress, CircuitBreaker> everyIpCircuitBreaker = new ConcurrentHashMap<>(16);
 
     // 读xml，dom4j
     public Configuration() {
