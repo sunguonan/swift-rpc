@@ -44,7 +44,7 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<RpcRequest> {
 
         RateLimiter rateLimiter = everyIpRateLimiter.get(socketAddress);
         if (rateLimiter == null) {
-            rateLimiter = new TokenBuketRateLimiter(10, 10);
+            rateLimiter = new TokenBuketRateLimiter(5, 5);
             everyIpRateLimiter.put(socketAddress, rateLimiter);
         }
         boolean allowRequest = rateLimiter.allowRequest();

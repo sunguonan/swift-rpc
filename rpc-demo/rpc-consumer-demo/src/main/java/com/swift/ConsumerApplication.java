@@ -35,7 +35,7 @@ public class ConsumerApplication {
 
         HelloRpc helloRpc = reference.get();
         // 调用get方法获取代理对象
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 5000; i++) {
             String rpc = helloRpc.sayHi("hello rpc");
             log.debug("rpc--->{}", rpc);
         }

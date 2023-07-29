@@ -7,6 +7,7 @@ import com.swift.discovery.NettyBootstrapInitializer;
 import com.swift.discovery.Registry;
 import com.swift.enumeration.RequestType;
 import com.swift.exception.NetworkException;
+import com.swift.protection.CircuitBreaker;
 import com.swift.serialize.SerializerFactory;
 import com.swift.transport.message.RequestPayload;
 import com.swift.transport.message.RpcRequest;
@@ -17,7 +18,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Date;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -50,19 +55,19 @@ public class ConsumerInvocationHandler implements InvocationHandler {
      */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {
-        
+
         // 从接口中判断是否需要重试
         TryTimes tryTimesAnnotation = method.getAnnotation(TryTimes.class);
-        
+
         // 设置不重试的值   0就代表不重试
         int tryTimes = 0;
         int intervalTime = 0;
-        
-        if (tryTimesAnnotation != null){
+
+        if (tryTimesAnnotation != null) {
             tryTimes = tryTimesAnnotation.tryTimes();
             intervalTime = tryTimesAnnotation.intervalTime();
         }
-        
+
         while (true) {
             try {
                 // 1. 封装报文 封装请求
@@ -89,6 +94,32 @@ public class ConsumerInvocationHandler implements InvocationHandler {
                         .selectServiceAddress(interfaceConsumer.getName());
                 log.debug("服务调用方发现了可用主机{}", inetSocketAddress);
 
+
+                // 4、获取当前地址所对应的断路器，如果断路器是打开的则不发送请求，抛出异常
+                Map<SocketAddress, CircuitBreaker> everyIpCircuitBreaker = RpcBootStrap.getInstance()
+                        .getConfiguration().getEveryIpCircuitBreaker();
+                CircuitBreaker circuitBreaker = everyIpCircuitBreaker.get(inetSocketAddress);
+                if (circuitBreaker == null) {
+                    circuitBreaker = new CircuitBreaker(10, 0.5F);
+                    everyIpCircuitBreaker.put(inetSocketAddress, circuitBreaker);
+                }
+
+
+                // 如果断路器是打开的
+                if (rpcRequest.getRequestType() != RequestType.HEART_BEAT.getId() && circuitBreaker.isBreak()) {
+                    // 定期打开
+                    Timer timer = new Timer();
+                    timer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            RpcBootStrap.getInstance()
+                                    .getConfiguration().getEveryIpCircuitBreaker()
+                                    .get(inetSocketAddress).reset();
+                        }
+                    }, 5000);
+
+                    throw new RuntimeException("当前断路器已经开启，无法发送请求");
+                }
                 // 3. 获取一个可用通道
                 Channel channel = getAvailableChannel(inetSocketAddress);
                 log.debug("服务调用方获取一个可用通道{}", channel);
