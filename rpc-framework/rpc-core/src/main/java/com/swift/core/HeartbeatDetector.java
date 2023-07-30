@@ -33,10 +33,10 @@ public class HeartbeatDetector {
      *
      * @param ServiceName 服务名
      */
-    public static void detectHeartbeat(String ServiceName) {
+    public static void detectHeartbeat(String ServiceName,String group) {
         // 1. 从注册中心拉取服务列表并建立连接
         Registry registry = RpcBootStrap.getInstance().getConfiguration().getRegistryConfig().getRegister();
-        List<InetSocketAddress> addresses = registry.lookup(ServiceName);
+        List<InetSocketAddress> addresses = registry.lookup(ServiceName,group);
 
         // 2. 将连接进行缓存
         for (InetSocketAddress address : addresses) {

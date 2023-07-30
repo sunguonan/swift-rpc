@@ -38,16 +38,22 @@ public class ZookeeperRegister extends AbstractRegister {
     public void register(ServiceConfig<?> service) {
         // 创建服务节点
         String parentNode = Constant.BASE_PROVIDER_PATH + "/" + service.getInterface().getName();
-        ZookeeperNode zookeeperParentNode = new ZookeeperNode(parentNode, null);
         // 发布结点  这个结点是一个持久的结点
         if (!ZookeeperUtil.exists(zooKeeper, parentNode, null)) {
+            ZookeeperNode zookeeperParentNode = new ZookeeperNode(parentNode, null);
             ZookeeperUtil.createNode(zooKeeper, zookeeperParentNode, null, CreateMode.PERSISTENT);
         }
+
+        parentNode = parentNode + "/" + service.getGroup();
+        if (!ZookeeperUtil.exists(zooKeeper, parentNode, null)) {
+            ZookeeperNode zookeeperParentNode = new ZookeeperNode(parentNode, null);
+            ZookeeperUtil.createNode(zooKeeper, zookeeperParentNode, null, CreateMode.PERSISTENT);
+        }
+
 
         // 创建本机结点  以ip:port的形式  该结点是临时结点
         // 服务提供的端口一般由自己设置
         // ip一般是局域网地址  不是127.0.0.1
-        // TODO port  写死 8080  后面改
         String localNode = parentNode + "/" + NetUtils.getIp() + ":" + RpcBootStrap.getInstance().getConfiguration().getPort();
         ZookeeperNode zookeeperLocalNode = new ZookeeperNode(localNode, null);
         // 发布结点  这个节点是一个临时节点
@@ -57,9 +63,9 @@ public class ZookeeperRegister extends AbstractRegister {
     }
 
     @Override
-    public List<InetSocketAddress> lookup(String serviceName) {
+    public List<InetSocketAddress> lookup(String serviceName, String group) {
         // 1、找到服务对应的节点
-        String serviceNode = Constant.BASE_PROVIDER_PATH + "/" + serviceName;
+        String serviceNode = Constant.BASE_PROVIDER_PATH + "/" + serviceName + "/" + group;
         // 2. 从zookeeper中获取子节点
         List<String> children = ZookeeperUtil.getChildren(zooKeeper, serviceNode, new UpAndDownWatcher());
         List<InetSocketAddress> inetSocketAddresses = children.stream().map(ipString -> {

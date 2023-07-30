@@ -18,6 +18,7 @@ public class ReferenceConfig<T> {
     private Class<T> interfaceConsumer;
     // 注册中心
     private Registry registry;
+    private String group;
 
     public ReferenceConfig() {
     }
@@ -51,9 +52,17 @@ public class ReferenceConfig<T> {
         // 使用动态代理完成事情
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Class<?>[] interfaces = {interfaceConsumer};
-        ConsumerInvocationHandler consumerInvocationHandler = new ConsumerInvocationHandler(registry, interfaceConsumer);
+        ConsumerInvocationHandler consumerInvocationHandler = new ConsumerInvocationHandler(registry, interfaceConsumer,group);
         // 使用动态代理生成代理对象  代理对象 --> 发送请求 处理远程调用的内容
         Object proxy = Proxy.newProxyInstance(classLoader, interfaces, consumerInvocationHandler);
         return (T) proxy;
+    }
+
+    public void setGroup(String group) {
+        this.group = group;
+    }
+    
+    public String getGroup(){
+        return group;
     }
 }

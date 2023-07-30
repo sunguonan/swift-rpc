@@ -18,14 +18,15 @@ public abstract class AbstractLoadBalancer implements LoadBalancer {
     private static final Map<String, Selector> CACHE = new ConcurrentHashMap<>(8);
 
     @Override
-    public InetSocketAddress selectServiceAddress(String serviceName) {
+    public InetSocketAddress selectServiceAddress(String serviceName,String group) {
         // 1. 优先从cache中获取一个选择器
         Selector selector = CACHE.get(serviceName);
 
         // 2. 如果没有，就需要为这个service创建一个selector
         if (selector == null) {
             // 找到可用服务列表
-            List<InetSocketAddress> serviceList = RpcBootStrap.getInstance().getConfiguration().getRegistryConfig().getRegister().lookup(serviceName);
+            List<InetSocketAddress> serviceList = 
+                    RpcBootStrap.getInstance().getConfiguration().getRegistryConfig().getRegister().lookup(serviceName,group);
 
             // 使用算法选择合适的结点
             selector = getSelector(serviceList);

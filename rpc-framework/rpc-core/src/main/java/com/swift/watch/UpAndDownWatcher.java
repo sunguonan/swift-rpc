@@ -34,7 +34,7 @@ public class UpAndDownWatcher implements Watcher {
             String serviceName = getServiceName(event.getPath());
             // 
             Registry registry = RpcBootStrap.getInstance().getConfiguration().getRegistryConfig().getRegister();
-            List<InetSocketAddress> addresses = registry.lookup(serviceName);
+            List<InetSocketAddress> addresses = registry.lookup(serviceName,RpcBootStrap.getInstance().getConfiguration().getGroup());
 
             // 处理新增的节点
             for (InetSocketAddress address : addresses) {

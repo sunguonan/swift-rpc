@@ -184,9 +184,10 @@ public class RpcBootStrap {
      */
     public RpcBootStrap reference(ReferenceConfig<?> reference) {
         // 开启对服务的心跳检测
-        HeartbeatDetector.detectHeartbeat(reference.getInterface().getName());
+        HeartbeatDetector.detectHeartbeat(reference.getInterface().getName(),configuration.getGroup());
         // 获取注册中心
         reference.setRegistry(configuration.getRegistryConfig().getRegister());
+        reference.setGroup(this.getConfiguration().getGroup());
         return this;
     }
 
@@ -245,11 +246,15 @@ public class RpcBootStrap {
                 throw new RuntimeException(e);
             }
 
+            RpcApi rpcApi = clazz.getAnnotation(RpcApi.class);
+            String group = rpcApi.group();
+
 
             for (Class<?> anInterface : interfaces) {
                 ServiceConfig<?> serviceConfig = new ServiceConfig<>();
                 serviceConfig.setInterface(anInterface);
                 serviceConfig.setRef(instance);
+                serviceConfig.setGroup(group);
                 if (log.isDebugEnabled()) {
                     log.debug("---->已经通过包扫描，将服务【{}】发布.", anInterface);
                 }
@@ -321,5 +326,10 @@ public class RpcBootStrap {
 
     public Configuration getConfiguration() {
         return configuration;
+    }
+
+    public RpcBootStrap group(String group) {
+        configuration.setGroup(group);
+        return this;
     }
 }

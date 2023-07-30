@@ -44,6 +44,8 @@ public class Configuration {
     private String compressType = "gzip";
     // 配置信息-->负载均衡策略
     private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
+    // 分组信息
+    private String group = "default";
 
     // 为每一个ip配置一个限流器
     private final Map<SocketAddress, RateLimiter> everyIpRateLimiter = new ConcurrentHashMap<>(16);

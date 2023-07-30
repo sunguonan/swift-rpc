@@ -28,14 +28,15 @@ public class ConsumerApplication {
                 .registry(new RegisterConfig("zookeeper://127.0.0.1:2181"))
                 .serialize("jdk")
                 .compress("gzip")
+                .group("default")
                 // 一但执行这个操作 就会将注册中心的内容传递给reference 
                 // reference就可以通过代理做一些事情
                 .reference(reference);
-
+        
 
         HelloRpc helloRpc = reference.get();
         // 调用get方法获取代理对象
-        for (int i = 0; i < 5000; i++) {
+        for (int i = 0; i < 5; i++) {
             String rpc = helloRpc.sayHi("hello rpc");
             log.debug("rpc--->{}", rpc);
         }

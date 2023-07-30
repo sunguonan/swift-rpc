@@ -42,10 +42,12 @@ public class ConsumerInvocationHandler implements InvocationHandler {
     private final Registry registry;
     // 接口
     private final Class<?> interfaceConsumer;
+    private String group;
 
-    public ConsumerInvocationHandler(Registry registry, Class<?> interfaceConsumer) {
+    public ConsumerInvocationHandler(Registry registry, Class<?> interfaceConsumer,String group) {
         this.registry = registry;
         this.interfaceConsumer = interfaceConsumer;
+        this.group = group;
     }
 
     /**
@@ -91,7 +93,7 @@ public class ConsumerInvocationHandler implements InvocationHandler {
 
                 // 2. 使用负载均衡策略获取主机
                 InetSocketAddress inetSocketAddress = RpcBootStrap.getInstance().getConfiguration().getLoadBalancer()
-                        .selectServiceAddress(interfaceConsumer.getName());
+                        .selectServiceAddress(interfaceConsumer.getName(),group);
                 log.debug("服务调用方发现了可用主机{}", inetSocketAddress);
 
 
